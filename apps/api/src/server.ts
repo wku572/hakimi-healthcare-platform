@@ -6,6 +6,7 @@ import {
 } from './database.js';
 import { loadEnvironment } from './env.js';
 import { createHealthcareFacilitiesModule } from './facilities/module.js';
+import { createPractitionersModule } from './practitioners/module.js';
 
 const env = loadEnvironment();
 const pool = createPostgresPool(env.DATABASE_URL);
@@ -14,9 +15,11 @@ pool.on('error', () => {
 });
 const readinessCheck = createDatabaseReadinessCheck(pool);
 const facilitiesModule = createHealthcareFacilitiesModule(pool);
+const practitionersModule = createPractitionersModule(pool);
 const app = createApp({
   readinessCheck,
   facilitiesRouter: facilitiesModule.router,
+  practitionersRouter: practitionersModule.router,
 });
 
 const server = app.listen(env.PORT, () => {
