@@ -290,6 +290,37 @@ curl -X POST http://127.0.0.1:3001/api/v1/practitioners/11111111-1111-4111-8111-
 
 Stable practitioner and assignment conflicts use the same error envelope as facilities.
 
+## Patients API
+
+The patients API lives under `/api/v1/patients`.
+
+Route summary:
+
+- `POST /api/v1/patients` - create a patient with an initial facility registration
+- `GET /api/v1/patients` - list patients with pagination and filters
+- `GET /api/v1/patients/:patientId` - fetch one patient by UUID
+- `PATCH /api/v1/patients/:patientId` - update a patient
+- `DELETE /api/v1/patients/:patientId` - soft deactivate a patient
+
+Patient registration rules:
+
+- The initial facility registration is created in the same transaction as the patient record.
+- Medical record numbers are unique per facility, not globally.
+- The same MRN may appear at different facilities.
+- Patient names, phone, and email are not treated as unique identifiers.
+- `DELETE` is soft and idempotent, and it preserves registration rows.
+- `administrativeSex` is limited to `female`, `male`, `other`, or `unknown`.
+
+List filters:
+
+- `page` default `1`
+- `pageSize` default `20`, maximum `100`
+- `search`
+- `facilityId`
+- `medicalRecordNumber`
+- `administrativeSex`
+- `isActive`
+
 ## Testing
 
 - Unit tests: `npm test`

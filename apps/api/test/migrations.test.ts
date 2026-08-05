@@ -10,10 +10,18 @@ describe('migration catalog', () => {
   it('orders migration files by numeric version', () => {
     const catalog = buildMigrationCatalogFromFiles(
       [
+        {
+          filename: '003_create_patients_and_registrations.sql',
+          sql: '-- up 3',
+        },
         { filename: '002_add_locations.sql', sql: '-- up 2' },
         { filename: '001_create_healthcare_facilities.sql', sql: '-- up 1' },
       ],
       [
+        {
+          filename: '003_create_patients_and_registrations.sql',
+          sql: '-- down 3',
+        },
         { filename: '001_create_healthcare_facilities.sql', sql: '-- down 1' },
         { filename: '002_add_locations.sql', sql: '-- down 2' },
       ],
@@ -22,6 +30,7 @@ describe('migration catalog', () => {
     expect(catalog.map((migration) => migration.versionLabel)).toEqual([
       '001',
       '002',
+      '003',
     ]);
   });
 

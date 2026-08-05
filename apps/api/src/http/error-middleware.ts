@@ -17,12 +17,8 @@ function isMalformedJsonError(error: unknown) {
 }
 
 function safeLogUnexpectedError(error: unknown) {
-  if (error instanceof Error) {
-    console.error('Unexpected API error:', error.message);
-    return;
-  }
-
-  console.error('Unexpected API error:', String(error));
+  void error;
+  console.error('Unexpected API error [opaque]');
 }
 
 export const apiErrorHandler: ErrorRequestHandler = (

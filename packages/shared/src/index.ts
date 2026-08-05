@@ -37,3 +37,15 @@ export type {
   UpdatePractitionerAssignmentInput,
   UpdatePractitionerInput,
 } from './practitioner-api.js';
+export type {
+  AdministrativeSex,
+  CreatePatientInput,
+  Patient,
+  PatientFacilityRegistration,
+  PatientFacilityRegistrationFacilitySummary,
+  PatientListQuery,
+  PatientListResponse,
+  PatientPagination,
+  UpdatePatientInput,
+} from './patient-api.js';
+export { administrativeSexes } from './patient-api.js';
