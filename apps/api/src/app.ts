@@ -21,6 +21,7 @@ type ReadinessCheck = () => Promise<boolean>;
 type CreateAppOptions = {
   readinessCheck?: ReadinessCheck;
   facilitiesRouter?: Router;
+  practitionersRouter?: Router;
 };
 
 const defaultReadinessCheck: ReadinessCheck = async () => false;
@@ -28,6 +29,7 @@ const defaultReadinessCheck: ReadinessCheck = async () => false;
 export function createApp(options: CreateAppOptions = {}) {
   const readinessCheck = options.readinessCheck ?? defaultReadinessCheck;
   const facilitiesRouter = options.facilitiesRouter;
+  const practitionersRouter = options.practitionersRouter;
   const app = express();
 
   app.use(express.json({ limit: '100kb' }));
@@ -67,6 +69,10 @@ export function createApp(options: CreateAppOptions = {}) {
 
   if (facilitiesRouter) {
     app.use('/api/v1/facilities', facilitiesRouter);
+  }
+
+  if (practitionersRouter) {
+    app.use('/api/v1/practitioners', practitionersRouter);
   }
 
   app.use(apiErrorHandler);

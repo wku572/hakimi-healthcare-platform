@@ -17,6 +17,10 @@
 - Keep API routes thin: validation in schemas, normalization in services, SQL in repositories, and stable JSON errors in centralized middleware.
 - Use parameterized PostgreSQL queries only and map database rows to API contracts in one place.
 - Keep request bodies strict, reject unknown properties, and never leak SQL, stack traces, or secrets in API responses.
+- Treat practitioner primary reassignment as a single transaction that clears the previous active primary before promoting the new one.
+- Keep practitioner professions free-form until a formal classification list exists.
+- Verify partial unique indexes and foreign keys in `db:schema:verify` for assignment tables.
+- Keep DELETE semantics soft and idempotent for facilities, practitioners, and assignments.
 - Keep generated output out of version control.
 
 ## Common Commands

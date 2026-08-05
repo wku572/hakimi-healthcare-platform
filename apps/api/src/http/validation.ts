@@ -18,6 +18,17 @@ const FIELD_LABELS: Record<string, string> = {
   page: 'Page',
   pageSize: 'Page size',
   search: 'Search',
+  practitionerId: 'Practitioner ID',
+  assignmentId: 'Assignment ID',
+  firstName: 'First name',
+  middleName: 'Middle name',
+  lastName: 'Last name',
+  profession: 'Profession',
+  bio: 'Bio',
+  roleTitle: 'Role title',
+  department: 'Department',
+  isPrimary: 'Primary assignment',
+  facilityId: 'Facility ID',
 };
 
 function labelFor(path: ReadonlyArray<string | number | symbol>) {

@@ -23,3 +23,17 @@ export type {
   HealthcareFacilityPagination,
   UpdateHealthcareFacilityInput,
 } from './facility-api.js';
+
+export type {
+  CreatePractitionerAssignmentInput,
+  CreatePractitionerInput,
+  Practitioner,
+  PractitionerAssignmentListResponse,
+  PractitionerAssignmentFacilitySummary,
+  PractitionerFacilityAssignment,
+  PractitionerListQuery,
+  PractitionerListResponse,
+  PractitionerPagination,
+  UpdatePractitionerAssignmentInput,
+  UpdatePractitionerInput,
+} from './practitioner-api.js';

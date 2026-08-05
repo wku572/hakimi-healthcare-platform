@@ -197,7 +197,100 @@ OpenAPI validation:
 npm run api:docs:validate
 ```
 
-Testing:
+## Practitioners API
+
+The practitioners API lives under `/api/v1/practitioners`.
+
+Route summary:
+
+- `POST /api/v1/practitioners` - create a practitioner
+- `GET /api/v1/practitioners` - list practitioners with pagination and filters
+- `GET /api/v1/practitioners/:id` - fetch one practitioner by UUID
+- `PATCH /api/v1/practitioners/:id` - update a practitioner
+- `DELETE /api/v1/practitioners/:id` - soft delete by setting `isActive` to `false`
+- `POST /api/v1/practitioners/:practitionerId/facilities` - create a facility assignment
+- `GET /api/v1/practitioners/:practitionerId/facilities` - list active and inactive assignments
+- `PATCH /api/v1/practitioners/:practitionerId/facilities/:assignmentId` - update an assignment
+- `DELETE /api/v1/practitioners/:practitionerId/facilities/:assignmentId` - soft delete an assignment
+
+Practitioner fields:
+
+- `code`
+- `firstName`
+- `middleName`
+- `lastName`
+- `profession`
+- `licenseNumber`
+- `phone`
+- `email`
+- `bio`
+- `isActive`
+
+Validation and normalization rules:
+
+- `code` is trimmed and stored in uppercase.
+- `email` is trimmed and stored in lowercase.
+- Blank optional strings become `null`.
+- `profession` is stored as a free-form string because no fixed profession enum exists yet.
+- Unknown properties are rejected.
+- `PATCH` bodies must not be empty.
+
+List filters:
+
+- `page` default `1`
+- `pageSize` default `20`, maximum `100`
+- `profession`
+- `isActive`
+- `facilityId`
+- `search`
+
+Search is case-insensitive across `code`, `firstName`, `middleName`, `lastName`, `profession`, and `licenseNumber`.
+
+Assignment rules:
+
+- `facilityId` is required when creating an assignment.
+- `isPrimary=true` and `isActive=true` clear the previous active primary assignment atomically.
+- `facilityId` cannot be changed on `PATCH`.
+- `DELETE` deactivates the assignment and clears `isPrimary`.
+- Inactive practitioners and facilities remain queryable, but they cannot receive new active assignments.
+- Repeating `DELETE` on an assignment remains `204`.
+
+Example practitioner create request:
+
+```bash
+curl -X POST http://127.0.0.1:3001/api/v1/practitioners \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "PRAC-001",
+    "firstName": "Mekdes",
+    "middleName": "A.",
+    "lastName": "Tadesse",
+    "profession": "general practitioner",
+    "licenseNumber": "MED-001",
+    "phone": "+251911111111",
+    "email": "mekdes@example.org",
+    "bio": "Integration test practitioner",
+    "isActive": true
+  }'
+```
+
+Example assignment create request:
+
+```bash
+curl -X POST http://127.0.0.1:3001/api/v1/practitioners/11111111-1111-4111-8111-111111111111/facilities \
+  -H "Content-Type: application/json" \
+  -d '{
+    "facilityId": "33333333-3333-4333-8333-333333333333",
+    "roleTitle": "Physician",
+    "department": "Internal Medicine",
+    "isPrimary": true,
+    "isActive": true
+  }'
+```
+
+Stable practitioner and assignment conflicts use the same error envelope as facilities.
+
+## Testing
 
 - Unit tests: `npm test`
 - PostgreSQL integration tests: `npm run test:integration:db`
@@ -265,9 +358,12 @@ Warning: `docker compose down --volumes` deletes the local PostgreSQL data volum
 - the expected columns, nullability, and defaults exist
 - the primary key and unique constraints are present
 - the `facility_type` check constraint matches the allowed values
+- the `practitioners` table exists with stable unique constraints, checks, and defaults
+- the `practitioner_facility_assignments` table exists with foreign keys, the duplicate-assignment unique constraint, and the partial unique index that enforces one active primary assignment per practitioner
 
 ## Notes
 
 - Do not commit secrets.
 - Keep the repository strict, typed, and workspace-aware.
 - DevOps infrastructure is intentionally empty for now.
+- Authentication and authorization are not implemented yet.

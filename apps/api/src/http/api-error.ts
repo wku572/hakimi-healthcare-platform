@@ -42,6 +42,22 @@ export function createNotFoundError(message = 'Facility not found') {
   return new ApiError(404, 'FACILITY_NOT_FOUND', message);
 }
 
+export function createFacilityNotFoundError(message = 'Facility not found') {
+  return createNotFoundError(message);
+}
+
+export function createPractitionerNotFoundError(
+  message = 'Practitioner not found',
+) {
+  return new ApiError(404, 'PRACTITIONER_NOT_FOUND', message);
+}
+
+export function createAssignmentNotFoundError(
+  message = 'Assignment not found',
+) {
+  return new ApiError(404, 'ASSIGNMENT_NOT_FOUND', message);
+}
+
 export function createCodeConflictError() {
   return new ApiError(
     409,
@@ -56,6 +72,38 @@ export function createLicenseConflictError() {
     'FACILITY_LICENSE_CONFLICT',
     'License number already exists',
   );
+}
+
+export function createPractitionerCodeConflictError() {
+  return new ApiError(
+    409,
+    'PRACTITIONER_CODE_CONFLICT',
+    'Practitioner code already exists',
+  );
+}
+
+export function createPractitionerLicenseConflictError() {
+  return new ApiError(
+    409,
+    'PRACTITIONER_LICENSE_CONFLICT',
+    'Practitioner license number already exists',
+  );
+}
+
+export function createInactivePractitionerError(
+  message = 'Practitioner is inactive',
+) {
+  return new ApiError(409, 'INACTIVE_PRACTITIONER', message);
+}
+
+export function createInactiveFacilityError(message = 'Facility is inactive') {
+  return new ApiError(409, 'INACTIVE_FACILITY', message);
+}
+
+export function createAssignmentConflictError(
+  message = 'Assignment already exists',
+) {
+  return new ApiError(409, 'ASSIGNMENT_CONFLICT', message);
 }
 
 export function createInternalError() {
