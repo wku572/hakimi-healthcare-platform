@@ -12,7 +12,8 @@
 - Keep TypeScript in `strict` mode.
 - Use `import type` for type-only imports.
 - Keep environment files limited to placeholders in `.env.example`.
-- Do not add Prisma, migrations, schemas, tables, seed data, or authentication unless explicitly requested.
+- Use SQL-first migrations only; do not add Prisma, ORM migrations, or seed data.
+- Never edit an already-applied migration; add a new migration instead.
 - Keep generated output out of version control.
 
 ## Common Commands
@@ -24,6 +25,10 @@ npm run db:up
 npm run db:down
 npm run db:status
 npm run db:logs
+npm run db:migrate
+npm run db:migrate:down
+npm run db:migrate:status
+npm run db:schema:verify
 npm run lint
 npm run typecheck
 npm test
@@ -37,6 +42,9 @@ npm run format:check
 - `docker compose config` must succeed.
 - `docker compose up -d` must start the local PostgreSQL service.
 - `docker compose ps` must show PostgreSQL healthy.
+- `npm run db:migrate:status` must report applied and pending migrations.
+- `npm run db:migrate` must succeed and be idempotent when re-run.
+- `npm run db:schema:verify` must succeed when the expected schema is present.
 - `npm run lint` must pass cleanly.
 - `npm run typecheck` must pass cleanly.
 - `npm test` must pass.

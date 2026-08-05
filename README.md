@@ -12,6 +12,8 @@ This repository starts as a monorepo foundation for the web app, API, shared typ
 - `infrastructure` - empty structure for future DevOps configuration
 - `.github/workflows` - reserved for future CI/CD
 - `compose.yaml` - local PostgreSQL dependency for Sprint 2
+- `apps/api/database/migrations/up` - ordered SQL migration files
+- `apps/api/database/migrations/down` - matching rollback SQL files
 
 ## Prerequisites
 
@@ -60,6 +62,34 @@ This repository starts as a monorepo foundation for the web app, API, shared typ
    npm run dev
    ```
 
+## Migrations
+
+The API uses SQL-first migrations under:
+
+- `apps/api/database/migrations/up`
+- `apps/api/database/migrations/down`
+
+Migration filenames are ordered and immutable, for example:
+
+- `001_create_healthcare_facilities.sql`
+
+The migration runner maintains a `schema_migrations` table with:
+
+- `version`
+- `name`
+- `checksum`
+- `applied_at`
+
+The checksum is computed from the `up` migration content. If an applied file changes later, the runner fails instead of silently drifting.
+
+Important:
+
+- Do not edit an already-applied migration.
+- Add a new migration for follow-up schema changes.
+- `npm run db:migrate:down` rolls back only the most recently applied migration.
+- Down migrations can be destructive, so use them carefully.
+- The API does not apply migrations automatically at startup.
+
 ## Verification
 
 Run the project checks from the repository root:
@@ -67,6 +97,9 @@ Run the project checks from the repository root:
 ```bash
 npm run db:up
 npm run db:status
+npm run db:migrate:status
+npm run db:migrate
+npm run db:schema:verify
 npm run lint
 npm run typecheck
 npm test
@@ -99,11 +132,24 @@ npm run db:up
 npm run db:down
 npm run db:status
 npm run db:logs
+npm run db:migrate
+npm run db:migrate:down
+npm run db:migrate:status
+npm run db:schema:verify
 ```
 
 `npm run db:down` stops and removes the container and network, but it preserves the named volume that stores local data.
 
 Warning: `docker compose down --volumes` deletes the local PostgreSQL data volume.
+
+## Schema Verification
+
+`npm run db:schema:verify` connects to the running development database and verifies:
+
+- the `healthcare_facilities` table exists
+- the expected columns, nullability, and defaults exist
+- the primary key and unique constraints are present
+- the `facility_type` check constraint matches the allowed values
 
 ## Notes
 

@@ -16,6 +16,10 @@
     "db:down": "docker compose down",
     "db:status": "docker compose ps postgres",
     "db:logs": "docker compose logs -f postgres",
+    "db:migrate": "npm run migrate --workspace @hakimi/api -- up",
+    "db:migrate:down": "npm run migrate --workspace @hakimi/api -- down",
+    "db:migrate:status": "npm run migrate --workspace @hakimi/api -- status",
+    "db:schema:verify": "npm run schema:verify --workspace @hakimi/api",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
   },

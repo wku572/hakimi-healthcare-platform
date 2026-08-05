@@ -7,7 +7,9 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate": "tsx src/migrate.ts",
+    "schema:verify": "tsx src/schema-verify.ts"
   },
   "dependencies": {
     "express": "^5.0.0",
