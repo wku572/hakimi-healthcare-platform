@@ -14,6 +14,9 @@
 - Keep environment files limited to placeholders in `.env.example`.
 - Use SQL-first migrations only; do not add Prisma, ORM migrations, or seed data.
 - Never edit an already-applied migration; add a new migration instead.
+- Keep API routes thin: validation in schemas, normalization in services, SQL in repositories, and stable JSON errors in centralized middleware.
+- Use parameterized PostgreSQL queries only and map database rows to API contracts in one place.
+- Keep request bodies strict, reject unknown properties, and never leak SQL, stack traces, or secrets in API responses.
 - Keep generated output out of version control.
 
 ## Common Commands
@@ -29,6 +32,8 @@ npm run db:migrate
 npm run db:migrate:down
 npm run db:migrate:status
 npm run db:schema:verify
+npm run test:integration:db
+npm run api:docs:validate
 npm run lint
 npm run typecheck
 npm test
@@ -48,6 +53,8 @@ npm run format:check
 - `npm run lint` must pass cleanly.
 - `npm run typecheck` must pass cleanly.
 - `npm test` must pass.
+- `npm run test:integration:db` must pass against the local PostgreSQL instance when run explicitly.
+- `npm run api:docs:validate` must pass.
 - `npm run build` must succeed for all workspaces.
 - `npm run format:check` must pass.
 

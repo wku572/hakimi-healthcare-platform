@@ -11,7 +11,7 @@ This repository starts as a monorepo foundation for the web app, API, shared typ
 - `docs` - project documentation
 - `infrastructure` - empty structure for future DevOps configuration
 - `.github/workflows` - reserved for future CI/CD
-- `compose.yaml` - local PostgreSQL dependency for Sprint 2
+- `compose.yaml` - local PostgreSQL container for local development
 - `apps/api/database/migrations/up` - ordered SQL migration files
 - `apps/api/database/migrations/down` - matching rollback SQL files
 
@@ -90,6 +90,119 @@ Important:
 - Down migrations can be destructive, so use them carefully.
 - The API does not apply migrations automatically at startup.
 
+## Facilities API
+
+The production-shaped facilities API lives under `/api/v1/facilities`.
+
+Route summary:
+
+- `POST /api/v1/facilities` - create a facility
+- `GET /api/v1/facilities` - list facilities with pagination and filters
+- `GET /api/v1/facilities/:id` - fetch one facility by UUID
+- `PATCH /api/v1/facilities/:id` - update a facility
+- `DELETE /api/v1/facilities/:id` - soft delete by setting `isActive` to `false`
+
+Validation and normalization rules:
+
+- Request bodies are strict JSON objects.
+- Unknown properties are rejected.
+- `code` is trimmed and stored in uppercase.
+- `email` is trimmed and stored in lowercase.
+- Blank optional strings become `null`.
+- `DELETE` does not remove rows from PostgreSQL.
+- Reactivation happens through `PATCH /api/v1/facilities/:id` with `isActive: true`.
+- Authentication and authorization are not implemented yet.
+
+Create and update accept these fields:
+
+- `code`
+- `name`
+- `facilityType`
+- `licenseNumber`
+- `phone`
+- `email`
+- `region`
+- `city`
+- `addressLine`
+- `isActive`
+
+List query parameters:
+
+- `page` default `1`
+- `pageSize` default `20`, maximum `100`
+- `facilityType`
+- `region`
+- `city`
+- `isActive`
+- `search`
+
+Stable error format:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": [
+      {
+        "field": "name",
+        "message": "Name is required"
+      }
+    ]
+  }
+}
+```
+
+Example create request:
+
+```bash
+curl -X POST http://127.0.0.1:3001/api/v1/facilities \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "ADD-CLINIC-001",
+    "name": "Addis Sunrise Clinic",
+    "facilityType": "clinic",
+    "licenseNumber": "LIC-ADD-001",
+    "phone": "+251911111111",
+    "email": "contact@addissunrise.example",
+    "region": "Addis Ababa",
+    "city": "Addis Ababa",
+    "addressLine": "Bole Road",
+    "isActive": true
+  }'
+```
+
+PowerShell example for reading a facility:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3001/api/v1/facilities/11111111-1111-4111-8111-111111111111
+```
+
+Example list request:
+
+```bash
+curl "http://127.0.0.1:3001/api/v1/facilities?page=1&pageSize=20&city=Addis%20Ababa&isActive=true"
+```
+
+Soft-delete behavior:
+
+- `DELETE /api/v1/facilities/:id` returns HTTP 204 with no body.
+- The row remains readable by ID after deletion.
+- `isActive=false` filters can still find the deactivated facility.
+- A second `DELETE` for the same row still returns HTTP 204.
+
+OpenAPI validation:
+
+```bash
+npm run api:docs:validate
+```
+
+Testing:
+
+- Unit tests: `npm test`
+- PostgreSQL integration tests: `npm run test:integration:db`
+- OpenAPI validation: `npm run api:docs:validate`
+
 ## Verification
 
 Run the project checks from the repository root:
@@ -100,9 +213,11 @@ npm run db:status
 npm run db:migrate:status
 npm run db:migrate
 npm run db:schema:verify
+npm run api:docs:validate
 npm run lint
 npm run typecheck
 npm test
+npm run test:integration:db
 npm run build
 npm run format:check
 ```

@@ -9,7 +9,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "migrate": "tsx src/migrate.ts",
-    "schema:verify": "tsx src/schema-verify.ts"
+    "schema:verify": "tsx src/schema-verify.ts",
+    "docs:validate": "redocly lint openapi.yaml",
+    "test:integration:db": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "express": "^5.0.0",

@@ -1,4 +1,6 @@
+import type { Router } from 'express';
 import express from 'express';
+import { apiErrorHandler } from './http/error-middleware.js';
 
 type HealthResponse = {
   status: 'ok';
@@ -18,13 +20,17 @@ type ReadinessCheck = () => Promise<boolean>;
 
 type CreateAppOptions = {
   readinessCheck?: ReadinessCheck;
+  facilitiesRouter?: Router;
 };
 
 const defaultReadinessCheck: ReadinessCheck = async () => false;
 
 export function createApp(options: CreateAppOptions = {}) {
   const readinessCheck = options.readinessCheck ?? defaultReadinessCheck;
+  const facilitiesRouter = options.facilitiesRouter;
   const app = express();
+
+  app.use(express.json({ limit: '100kb' }));
 
   app.get('/health/live', (_request, response) => {
     const payload: HealthResponse = {
@@ -58,6 +64,12 @@ export function createApp(options: CreateAppOptions = {}) {
 
     response.status(503).json(payload);
   });
+
+  if (facilitiesRouter) {
+    app.use('/api/v1/facilities', facilitiesRouter);
+  }
+
+  app.use(apiErrorHandler);
 
   return app;
 }

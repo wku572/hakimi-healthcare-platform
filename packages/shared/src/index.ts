@@ -13,3 +13,13 @@ export type {
   FacilityType,
   HealthcareFacility,
 } from './healthcare-facility.js';
+export type {
+  ApiErrorCode,
+  ApiErrorDetail,
+  ApiErrorResponse,
+  CreateHealthcareFacilityInput,
+  HealthcareFacilityListQuery,
+  HealthcareFacilityListResponse,
+  HealthcareFacilityPagination,
+  UpdateHealthcareFacilityInput,
+} from './facility-api.js';

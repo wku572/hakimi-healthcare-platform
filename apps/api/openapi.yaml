@@ -1,0 +1,490 @@
+openapi: 3.1.0
+info:
+  title: Hakimi Healthcare Facilities API
+  version: 1.0.0
+  license:
+    name: UNLICENSED
+    identifier: UNLICENSED
+  description: |
+    REST API for managing healthcare facilities in Hakimi / ሀኪሜ.
+
+    Notes:
+    - `DELETE /api/v1/facilities/{id}` performs a soft delete by setting `isActive` to `false`.
+    - Authentication and authorization are not implemented yet.
+servers:
+  - url: http://127.0.0.1:3001
+security: []
+tags:
+  - name: Facilities
+    description: Healthcare facility management endpoints
+paths:
+  /api/v1/facilities:
+    post:
+      tags: [Facilities]
+      summary: Create a healthcare facility
+      operationId: createHealthcareFacility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHealthcareFacilityInput'
+            examples:
+              clinic:
+                summary: Fictional clinic
+                value:
+                  code: ADD-CLINIC-001
+                  name: Addis Sunrise Clinic
+                  facilityType: clinic
+                  licenseNumber: LIC-ADD-001
+                  phone: '+251911111111'
+                  email: contact@addissunrise.example
+                  region: Addis Ababa
+                  city: Addis Ababa
+                  addressLine: Bole Road
+                  isActive: true
+      responses:
+        '201':
+          description: Created facility
+          headers:
+            Location:
+              description: URL of the created facility
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthcareFacility'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/FacilityConflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags: [Facilities]
+      summary: List healthcare facilities
+      operationId: listHealthcareFacilities
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: facilityType
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/FacilityType'
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: city
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: isActive
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+      responses:
+        '200':
+          description: Paged list of facilities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthcareFacilityListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/facilities/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Facilities]
+      summary: Get a facility by id
+      operationId: getHealthcareFacilityById
+      responses:
+        '200':
+          description: Facility found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthcareFacility'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/FacilityNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [Facilities]
+      summary: Update a facility
+      operationId: updateHealthcareFacility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateHealthcareFacilityInput'
+            examples:
+              rename:
+                summary: Rename a facility
+                value:
+                  name: Addis Sunrise Clinic Updated
+      responses:
+        '200':
+          description: Updated facility
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthcareFacility'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/FacilityNotFound'
+        '409':
+          $ref: '#/components/responses/FacilityConflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Facilities]
+      summary: Deactivate a facility
+      description: |
+        Soft delete only. This operation sets `isActive` to `false` and updates `updatedAt`.
+        The record remains available through `GET /api/v1/facilities/{id}`.
+      operationId: deactivateHealthcareFacility
+      responses:
+        '204':
+          description: Facility deactivated or already inactive
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/FacilityNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  schemas:
+    FacilityType:
+      type: string
+      enum:
+        - hospital
+        - clinic
+        - health_center
+        - diagnostic_center
+        - pharmacy
+    HealthcareFacility:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - code
+        - name
+        - facilityType
+        - licenseNumber
+        - phone
+        - email
+        - region
+        - city
+        - addressLine
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        facilityType:
+          $ref: '#/components/schemas/FacilityType'
+        licenseNumber:
+          type:
+            - string
+            - 'null'
+        phone:
+          type:
+            - string
+            - 'null'
+        email:
+          type:
+            - string
+            - 'null'
+        region:
+          type: string
+        city:
+          type: string
+        addressLine:
+          type:
+            - string
+            - 'null'
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateHealthcareFacilityInput:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - name
+        - facilityType
+        - region
+        - city
+      properties:
+        code:
+          type: string
+          minLength: 2
+          maxLength: 50
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        facilityType:
+          $ref: '#/components/schemas/FacilityType'
+        licenseNumber:
+          type:
+            - string
+            - 'null'
+          maxLength: 100
+        phone:
+          type:
+            - string
+            - 'null'
+          maxLength: 30
+        email:
+          type:
+            - string
+            - 'null'
+          format: email
+          maxLength: 254
+        region:
+          type: string
+          minLength: 2
+          maxLength: 100
+        city:
+          type: string
+          minLength: 2
+          maxLength: 100
+        addressLine:
+          type:
+            - string
+            - 'null'
+          maxLength: 300
+        isActive:
+          type: boolean
+          default: true
+    UpdateHealthcareFacilityInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        code:
+          type: string
+          minLength: 2
+          maxLength: 50
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        facilityType:
+          $ref: '#/components/schemas/FacilityType'
+        licenseNumber:
+          type:
+            - string
+            - 'null'
+          maxLength: 100
+        phone:
+          type:
+            - string
+            - 'null'
+          maxLength: 30
+        email:
+          type:
+            - string
+            - 'null'
+          format: email
+          maxLength: 254
+        region:
+          type: string
+          minLength: 2
+          maxLength: 100
+        city:
+          type: string
+          minLength: 2
+          maxLength: 100
+        addressLine:
+          type:
+            - string
+            - 'null'
+          maxLength: 300
+        isActive:
+          type: boolean
+    HealthcareFacilityPagination:
+      type: object
+      additionalProperties: false
+      required:
+        - page
+        - pageSize
+        - totalItems
+        - totalPages
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+    HealthcareFacilityListResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/HealthcareFacility'
+        pagination:
+          $ref: '#/components/schemas/HealthcareFacilityPagination'
+    ApiErrorDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    ApiErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - INVALID_JSON
+                - FACILITY_NOT_FOUND
+                - FACILITY_CODE_CONFLICT
+                - FACILITY_LICENSE_CONFLICT
+                - INTERNAL_ERROR
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                $ref: '#/components/schemas/ApiErrorDetail'
+  responses:
+    ValidationError:
+      description: Validation failure or malformed request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          examples:
+            validation:
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Request validation failed
+                  details:
+                    - field: name
+                      message: Name is required
+    FacilityNotFound:
+      description: Facility not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          examples:
+            notFound:
+              value:
+                error:
+                  code: FACILITY_NOT_FOUND
+                  message: Facility not found
+    FacilityConflict:
+      description: Facility code or license number conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          examples:
+            codeConflict:
+              value:
+                error:
+                  code: FACILITY_CODE_CONFLICT
+                  message: Facility code already exists
+            licenseConflict:
+              value:
+                error:
+                  code: FACILITY_LICENSE_CONFLICT
+                  message: License number already exists
+    InternalError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          examples:
+            internal:
+              value:
+                error:
+                  code: INTERNAL_ERROR
+                  message: Internal server error

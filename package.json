@@ -20,11 +20,14 @@
     "db:migrate:down": "npm run migrate --workspace @hakimi/api -- down",
     "db:migrate:status": "npm run migrate --workspace @hakimi/api -- status",
     "db:schema:verify": "npm run schema:verify --workspace @hakimi/api",
+    "test:integration:db": "npm run test:integration:db --workspace @hakimi/api",
+    "api:docs:validate": "npm run docs:validate --workspace @hakimi/api",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@redocly/cli": "^1.33.0",
     "concurrently": "^9.0.0",
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^5.0.0",
@@ -32,6 +35,7 @@
     "globals": "^16.0.0",
     "prettier": "^3.0.0",
     "typescript": "^5.0.0",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.0.0",
+    "yaml": "^2.9.0"
   }
 }

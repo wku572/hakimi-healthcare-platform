@@ -5,6 +5,7 @@ import {
   createPostgresPool,
 } from './database.js';
 import { loadEnvironment } from './env.js';
+import { createHealthcareFacilitiesModule } from './facilities/module.js';
 
 const env = loadEnvironment();
 const pool = createPostgresPool(env.DATABASE_URL);
@@ -12,7 +13,11 @@ pool.on('error', () => {
   console.error('PostgreSQL connection error detected.');
 });
 const readinessCheck = createDatabaseReadinessCheck(pool);
-const app = createApp({ readinessCheck });
+const facilitiesModule = createHealthcareFacilitiesModule(pool);
+const app = createApp({
+  readinessCheck,
+  facilitiesRouter: facilitiesModule.router,
+});
 
 const server = app.listen(env.PORT, () => {
   console.log(`Hakimi API listening on http://localhost:${env.PORT}`);
