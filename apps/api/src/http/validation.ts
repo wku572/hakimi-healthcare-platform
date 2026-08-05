@@ -20,15 +20,19 @@ const FIELD_LABELS: Record<string, string> = {
   search: 'Search',
   practitionerId: 'Practitioner ID',
   assignmentId: 'Assignment ID',
+  patientId: 'Patient ID',
   firstName: 'First name',
   middleName: 'Middle name',
   lastName: 'Last name',
+  dateOfBirth: 'Date of birth',
+  administrativeSex: 'Administrative sex',
   profession: 'Profession',
   bio: 'Bio',
   roleTitle: 'Role title',
   department: 'Department',
   isPrimary: 'Primary assignment',
   facilityId: 'Facility ID',
+  medicalRecordNumber: 'Medical record number',
 };
 
 function labelFor(path: ReadonlyArray<string | number | symbol>) {

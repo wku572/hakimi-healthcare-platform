@@ -9,6 +9,13 @@ const allowedFacilityTypes = [
   'pharmacy',
 ] as const;
 
+const allowedAdministrativeSexes = [
+  'female',
+  'male',
+  'other',
+  'unknown',
+] as const;
+
 type ColumnMetadata = {
   column_name: string;
   data_type: string;
@@ -745,6 +752,294 @@ async function verifyAssignmentSchema(client: {
   });
 }
 
+async function verifyPatientSchema(client: {
+  query<T extends Record<string, unknown>>(
+    text: string,
+    values?: unknown[],
+  ): Promise<{
+    rows: T[];
+  }>;
+}) {
+  await assertTableExists(client, 'patients');
+  await assertColumns(client, 'patients', [
+    {
+      column_name: 'id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'uuidv7()',
+    },
+    {
+      column_name: 'first_name',
+      data_type: 'character varying(100)',
+      character_maximum_length: 100,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'middle_name',
+      data_type: 'character varying(100)',
+      character_maximum_length: 100,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'last_name',
+      data_type: 'character varying(100)',
+      character_maximum_length: 100,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'date_of_birth',
+      data_type: 'date',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'administrative_sex',
+      data_type: 'character varying(20)',
+      character_maximum_length: 20,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'phone',
+      data_type: 'character varying(30)',
+      character_maximum_length: 30,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'email',
+      data_type: 'character varying(254)',
+      character_maximum_length: 254,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'address_line',
+      data_type: 'character varying(200)',
+      character_maximum_length: 200,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'city',
+      data_type: 'character varying(100)',
+      character_maximum_length: 100,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'region',
+      data_type: 'character varying(100)',
+      character_maximum_length: 100,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'is_active',
+      data_type: 'boolean',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'true',
+    },
+    {
+      column_name: 'created_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+    {
+      column_name: 'updated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+  ]);
+  await assertConstraints(client, 'patients', {
+    patients_pkey: {
+      type: 'p',
+      columns: ['id'],
+    },
+    patients_first_name_not_blank_check: {
+      type: 'c',
+      columns: ['first_name'],
+      definitionFragments: ["btrim(first_name::text)<>''::text"],
+    },
+    patients_middle_name_not_blank_check: {
+      type: 'c',
+      columns: ['middle_name'],
+      definitionFragments: [
+        "middle_name is null or btrim(middle_name::text)<>''::text",
+      ],
+    },
+    patients_last_name_not_blank_check: {
+      type: 'c',
+      columns: ['last_name'],
+      definitionFragments: [
+        "last_name is null or btrim(last_name::text)<>''::text",
+      ],
+    },
+    patients_administrative_sex_check: {
+      type: 'c',
+      columns: ['administrative_sex'],
+      definitionFragments: [
+        'administrative_sex::text = lower(btrim(administrative_sex::text))',
+        `administrative_sex::text = any(array[${allowedAdministrativeSexes
+          .map((value) => `'${value}'::character varying`)
+          .join(', ')}]::text[])`,
+      ],
+    },
+    patients_phone_not_blank_check: {
+      type: 'c',
+      columns: ['phone'],
+      definitionFragments: ["phone is null or btrim(phone::text)<>''::text"],
+    },
+    patients_email_not_blank_check: {
+      type: 'c',
+      columns: ['email'],
+      definitionFragments: ["email is null or btrim(email::text)<>''::text"],
+    },
+    patients_address_line_not_blank_check: {
+      type: 'c',
+      columns: ['address_line'],
+      definitionFragments: [
+        "address_line is null or btrim(address_line::text)<>''::text",
+      ],
+    },
+    patients_city_not_blank_check: {
+      type: 'c',
+      columns: ['city'],
+      definitionFragments: ["city is null or btrim(city::text)<>''::text"],
+    },
+    patients_region_not_blank_check: {
+      type: 'c',
+      columns: ['region'],
+      definitionFragments: ["region is null or btrim(region::text)<>''::text"],
+    },
+  });
+  await assertIndexes(client, 'patients', {
+    patients_name_search_idx: {
+      definitionFragments: [
+        'create index patients_name_search_idx',
+        '(first_name, middle_name, last_name, id)',
+      ],
+    },
+    patients_last_name_first_name_id_idx: {
+      definitionFragments: [
+        'create index patients_last_name_first_name_id_idx',
+        '(last_name, first_name, id)',
+      ],
+    },
+  });
+}
+
+async function verifyPatientRegistrationSchema(client: {
+  query<T extends Record<string, unknown>>(
+    text: string,
+    values?: unknown[],
+  ): Promise<{
+    rows: T[];
+  }>;
+}) {
+  await assertTableExists(client, 'patient_facility_registrations');
+  await assertColumns(client, 'patient_facility_registrations', [
+    {
+      column_name: 'id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'uuidv7()',
+    },
+    {
+      column_name: 'patient_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'facility_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'medical_record_number',
+      data_type: 'character varying(50)',
+      character_maximum_length: 50,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'created_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+    {
+      column_name: 'updated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+  ]);
+  await assertConstraints(client, 'patient_facility_registrations', {
+    patient_facility_registrations_pkey: {
+      type: 'p',
+      columns: ['id'],
+    },
+    patient_facility_registrations_patient_id_fkey: {
+      type: 'f',
+      columns: ['patient_id'],
+      definitionFragments: ['references patients(id)', 'on delete restrict'],
+    },
+    patient_facility_registrations_facility_id_fkey: {
+      type: 'f',
+      columns: ['facility_id'],
+      definitionFragments: [
+        'references healthcare_facilities(id)',
+        'on delete restrict',
+      ],
+    },
+    patient_facility_registrations_mrn_not_blank_check: {
+      type: 'c',
+      columns: ['medical_record_number'],
+      definitionFragments: ["btrim(medical_record_number::text)<>''::text"],
+    },
+    patient_facility_registrations_facility_mrn_key: {
+      type: 'u',
+      columns: ['facility_id', 'medical_record_number'],
+    },
+    patient_facility_registrations_patient_facility_key: {
+      type: 'u',
+      columns: ['patient_id', 'facility_id'],
+    },
+  });
+  await assertIndexes(client, 'patient_facility_registrations', {
+    patient_facility_registrations_patient_id_idx: {
+      definitionFragments: [
+        'create index patient_facility_registrations_patient_id_idx',
+        '(patient_id)',
+      ],
+    },
+    patient_facility_registrations_facility_id_idx: {
+      definitionFragments: [
+        'create index patient_facility_registrations_facility_id_idx',
+        '(facility_id)',
+      ],
+    },
+  });
+}
+
 async function verifySchema() {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
@@ -755,9 +1050,11 @@ async function verifySchema() {
     try {
       await verifyHealthcareFacilitySchema(client);
       await verifyPractitionerSchema(client);
+      await verifyPatientSchema(client);
+      await verifyPatientRegistrationSchema(client);
       await verifyAssignmentSchema(client);
       console.log(
-        'Schema verification passed for healthcare_facilities, practitioners, and practitioner_facility_assignments.',
+        'Schema verification passed for healthcare_facilities, practitioners, patients, patient_facility_registrations, and practitioner_facility_assignments.',
       );
     } finally {
       client.release();

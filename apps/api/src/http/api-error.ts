@@ -74,6 +74,10 @@ export function createLicenseConflictError() {
   );
 }
 
+export function createFacilityInactiveError(message = 'Facility is inactive') {
+  return new ApiError(409, 'FACILITY_INACTIVE', message);
+}
+
 export function createPractitionerCodeConflictError() {
   return new ApiError(
     409,
@@ -104,6 +108,16 @@ export function createAssignmentConflictError(
   message = 'Assignment already exists',
 ) {
   return new ApiError(409, 'ASSIGNMENT_CONFLICT', message);
+}
+
+export function createPatientNotFoundError(message = 'Patient not found') {
+  return new ApiError(404, 'PATIENT_NOT_FOUND', message);
+}
+
+export function createPatientRegistrationConflictError(
+  message = 'Patient registration already exists',
+) {
+  return new ApiError(409, 'PATIENT_REGISTRATION_CONFLICT', message);
 }
 
 export function createInternalError() {

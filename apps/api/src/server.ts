@@ -6,6 +6,7 @@ import {
 } from './database.js';
 import { loadEnvironment } from './env.js';
 import { createHealthcareFacilitiesModule } from './facilities/module.js';
+import { createPatientsModule } from './patients/module.js';
 import { createPractitionersModule } from './practitioners/module.js';
 
 const env = loadEnvironment();
@@ -16,10 +17,12 @@ pool.on('error', () => {
 const readinessCheck = createDatabaseReadinessCheck(pool);
 const facilitiesModule = createHealthcareFacilitiesModule(pool);
 const practitionersModule = createPractitionersModule(pool);
+const patientsModule = createPatientsModule(pool);
 const app = createApp({
   readinessCheck,
   facilitiesRouter: facilitiesModule.router,
   practitionersRouter: practitionersModule.router,
+  patientsRouter: patientsModule.router,
 });
 
 const server = app.listen(env.PORT, () => {
