@@ -21,6 +21,8 @@ import {
   createValidationError,
 } from '../http/api-error.js';
 import type { AppointmentRepository } from './repository.js';
+import type { ReminderRepository } from '../reminders/repository.js';
+import type { CreateAppointmentReminderInput } from '../reminders/repository.js';
 
 export type AppointmentService = {
   createAppointment(input: CreateAppointmentInput): Promise<Appointment>;
@@ -36,6 +38,25 @@ export type AppointmentService = {
     id: string,
     input: CancelAppointmentInput,
   ): Promise<Appointment>;
+};
+
+type AppointmentReminderCommands = Pick<
+  ReminderRepository,
+  | 'createAppointmentReminder'
+  | 'cancelActiveAppointmentReminders'
+  | 'supersedeAppointmentReminders'
+>;
+
+const noopReminderCommands: AppointmentReminderCommands = {
+  async createAppointmentReminder() {
+    return null;
+  },
+  async cancelActiveAppointmentReminders() {
+    return 0;
+  },
+  async supersedeAppointmentReminders() {
+    return 0;
+  },
 };
 
 function normalizeText(value: string) {
@@ -189,6 +210,7 @@ function ensureUpdateTransition(
 
 export function createAppointmentService(
   repository: AppointmentRepository,
+  reminderCommands: AppointmentReminderCommands = noopReminderCommands,
 ): AppointmentService {
   return {
     async createAppointment(input) {
@@ -279,7 +301,10 @@ export function createAppointmentService(
       const normalized = normalizeUpdateInput(input);
 
       return repository.withTransaction(async (tx) => {
-        const existing = await repository.findAppointmentById(id, tx);
+        const existing = await repository.findAppointmentScheduleStateById(
+          id,
+          tx,
+        );
 
         if (!existing) {
           throw createAppointmentNotFoundError();
@@ -287,14 +312,38 @@ export function createAppointmentService(
 
         ensureUpdateTransition(existing.status, normalized.status);
 
+        const existingScheduledStart = new Date(
+          existing.scheduled_start,
+        ).toISOString();
+        const existingScheduledEnd = new Date(
+          existing.scheduled_end,
+        ).toISOString();
         const nextScheduledStart =
-          normalized.scheduledStart ?? existing.scheduledStart;
+          normalized.scheduledStart ?? existingScheduledStart;
         const nextScheduledEnd =
-          normalized.scheduledEnd ?? existing.scheduledEnd;
+          normalized.scheduledEnd ?? existingScheduledEnd;
         const nextStatus = normalized.status ?? existing.status;
         const hasTimeChanges =
           normalized.scheduledStart !== undefined ||
           normalized.scheduledEnd !== undefined;
+        const hasStatusChanges =
+          normalized.status !== undefined &&
+          normalized.status !== existing.status;
+
+        if (
+          !hasTimeChanges &&
+          !hasStatusChanges &&
+          nextScheduledStart === existingScheduledStart &&
+          nextScheduledEnd === existingScheduledEnd
+        ) {
+          const appointment = await repository.findAppointmentById(id, tx);
+
+          if (!appointment) {
+            throw createAppointmentNotFoundError();
+          }
+
+          return appointment;
+        }
 
         if (
           hasTimeChanges &&
@@ -310,7 +359,7 @@ export function createAppointmentService(
 
         if (nextStatus === 'SCHEDULED' || nextStatus === 'CONFIRMED') {
           const conflict = await repository.findConflictingAppointment(
-            existing.practitionerId,
+            existing.practitioner_id,
             nextScheduledStart,
             nextScheduledEnd,
             existing.id,
@@ -326,6 +375,39 @@ export function createAppointmentService(
 
         if (!updated) {
           throw createAppointmentNotFoundError();
+        }
+
+        const nextScheduleVersion =
+          existing.schedule_version + (hasTimeChanges ? 1 : 0);
+
+        if (hasTimeChanges) {
+          await reminderCommands.supersedeAppointmentReminders(
+            id,
+            nextScheduleVersion,
+            tx,
+          );
+        }
+
+        if (nextStatus === 'CONFIRMED') {
+          const availableAt = new Date(
+            Date.parse(nextScheduledStart) - 24 * 60 * 60 * 1000,
+          ).toISOString();
+
+          if (Date.parse(availableAt) > Date.now()) {
+            const reminderInput: CreateAppointmentReminderInput = {
+              appointmentId: id,
+              reminderKind: 'APPOINTMENT_24H',
+              scheduleVersion: nextScheduleVersion,
+              idempotencyKey: `${id}:APPOINTMENT_24H:${nextScheduleVersion}`,
+              availableAt,
+            };
+
+            await reminderCommands.createAppointmentReminder(reminderInput, tx);
+          }
+        }
+
+        if (nextStatus === 'COMPLETED' || nextStatus === 'NO_SHOW') {
+          await reminderCommands.cancelActiveAppointmentReminders(id, tx);
         }
 
         return updated;
@@ -359,6 +441,8 @@ export function createAppointmentService(
         if (!cancelled) {
           throw createAppointmentNotFoundError();
         }
+
+        await reminderCommands.cancelActiveAppointmentReminders(id, tx);
 
         return cancelled;
       });

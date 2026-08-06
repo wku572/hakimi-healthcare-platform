@@ -22,6 +22,7 @@
     "db:schema:verify": "npm run schema:verify --workspace @hakimi/api",
     "test:integration:db": "npm run test:integration:db --workspace @hakimi/api",
     "api:docs:validate": "npm run docs:validate --workspace @hakimi/api",
+    "worker:reminders": "npm run worker:reminders --workspace @hakimi/api",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
   },

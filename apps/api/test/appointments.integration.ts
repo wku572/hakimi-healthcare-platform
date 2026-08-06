@@ -30,7 +30,7 @@ function uniqueSuffix() {
 
 function appointmentDateIso() {
   const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setDate(tomorrow.getDate() + 2);
   return tomorrow.toISOString().slice(0, 10);
 }
 
@@ -63,6 +63,13 @@ function trackAppointmentId(id: string) {
 }
 
 async function deleteTrackedRows(pool: ReturnType<typeof createPostgresPool>) {
+  if (createdAppointmentIds.length > 0) {
+    await pool.query(
+      'DELETE FROM appointment_reminders WHERE appointment_id = ANY($1::uuid[])',
+      [createdAppointmentIds],
+    );
+  }
+
   if (createdAppointmentIds.length > 0) {
     await pool.query('DELETE FROM appointments WHERE id = ANY($1::uuid[])', [
       createdAppointmentIds,
@@ -266,6 +273,25 @@ describe.sequential('PostgreSQL appointment integration', () => {
     expect(confirmAppointmentAResponse.status).toBe(200);
     expect(confirmAppointmentAResponse.body.status).toBe('CONFIRMED');
 
+    const appointmentARemindersAfterConfirm = await pool.query<{
+      schedule_version: number;
+      status: string;
+    }>(
+      `
+        SELECT schedule_version, status
+        FROM appointment_reminders
+        WHERE appointment_id = $1
+        ORDER BY schedule_version ASC
+      `,
+      [appointmentAResponse.body.id],
+    );
+    expect(appointmentARemindersAfterConfirm.rows).toEqual([
+      {
+        schedule_version: 1,
+        status: 'PENDING',
+      },
+    ]);
+
     const rescheduleAppointmentAResponse = await request(app)
       .patch(`/api/v1/appointments/${appointmentAResponse.body.id}`)
       .send({
@@ -276,6 +302,55 @@ describe.sequential('PostgreSQL appointment integration', () => {
     expect(rescheduleAppointmentAResponse.body.scheduledStart).toBe(
       `${dayIso}T05:45:00.000Z`,
     );
+
+    const appointmentARemindersAfterReschedule = await pool.query<{
+      schedule_version: number;
+      status: string;
+    }>(
+      `
+        SELECT schedule_version, status
+        FROM appointment_reminders
+        WHERE appointment_id = $1
+        ORDER BY schedule_version ASC
+      `,
+      [appointmentAResponse.body.id],
+    );
+    expect(appointmentARemindersAfterReschedule.rows).toEqual([
+      {
+        schedule_version: 1,
+        status: 'SUPERSEDED',
+      },
+      {
+        schedule_version: 2,
+        status: 'PENDING',
+      },
+    ]);
+
+    const confirmAppointmentBResponse = await request(app)
+      .patch(`/api/v1/appointments/${appointmentBResponse.body.id}`)
+      .send({
+        status: 'confirmed',
+      });
+    expect(confirmAppointmentBResponse.status).toBe(200);
+
+    const appointmentBRemindersBeforeCancel = await pool.query<{
+      schedule_version: number;
+      status: string;
+    }>(
+      `
+        SELECT schedule_version, status
+        FROM appointment_reminders
+        WHERE appointment_id = $1
+        ORDER BY schedule_version ASC
+      `,
+      [appointmentBResponse.body.id],
+    );
+    expect(appointmentBRemindersBeforeCancel.rows).toEqual([
+      {
+        schedule_version: 1,
+        status: 'PENDING',
+      },
+    ]);
 
     const cancelAppointmentBResponse = await request(app)
       .post(`/api/v1/appointments/${appointmentBResponse.body.id}/cancel`)
@@ -292,6 +367,25 @@ describe.sequential('PostgreSQL appointment integration', () => {
     expect(repeatCancelAppointmentBResponse.body).toEqual(
       cancelAppointmentBResponse.body,
     );
+
+    const appointmentBRemindersAfterCancel = await pool.query<{
+      schedule_version: number;
+      status: string;
+    }>(
+      `
+        SELECT schedule_version, status
+        FROM appointment_reminders
+        WHERE appointment_id = $1
+        ORDER BY schedule_version ASC
+      `,
+      [appointmentBResponse.body.id],
+    );
+    expect(appointmentBRemindersAfterCancel.rows).toEqual([
+      {
+        schedule_version: 1,
+        status: 'CANCELLED',
+      },
+    ]);
 
     const listAppointmentsResponse = await request(app)
       .get('/api/v1/appointments')

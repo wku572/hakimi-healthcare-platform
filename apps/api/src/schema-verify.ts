@@ -24,6 +24,15 @@ const allowedAppointmentStatuses = [
   'NO_SHOW',
 ] as const;
 
+const allowedReminderStatuses = [
+  'PENDING',
+  'PROCESSING',
+  'DELIVERED',
+  'CANCELLED',
+  'SUPERSEDED',
+  'DEAD_LETTER',
+] as const;
+
 type ColumnMetadata = {
   column_name: string;
   data_type: string;
@@ -1135,6 +1144,13 @@ async function verifyAppointmentSchema(client: {
       is_nullable: 'NO',
       default_expr: 'now()',
     },
+    {
+      column_name: 'schedule_version',
+      data_type: 'integer',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: '1',
+    },
   ]);
   await assertConstraints(client, 'appointments', {
     appointments_pkey: {
@@ -1191,6 +1207,11 @@ async function verifyAppointmentSchema(client: {
         "status::text = 'CANCELLED'::text AND cancelled_at IS NOT NULL OR status::text <> 'CANCELLED'::text AND cancelled_at IS NULL",
       ],
     },
+    appointments_schedule_version_positive_check: {
+      type: 'c',
+      columns: ['schedule_version'],
+      definitionFragments: ['schedule_version > 0'],
+    },
     appointments_practitioner_time_no_overlap_excl: {
       type: 'x',
       columns: ['practitioner_id'],
@@ -1242,6 +1263,262 @@ async function verifyAppointmentSchema(client: {
   });
 }
 
+async function verifyAppointmentReminderSchema(client: {
+  query<T extends Record<string, unknown>>(
+    text: string,
+    values?: unknown[],
+  ): Promise<{
+    rows: T[];
+  }>;
+}) {
+  await assertTableExists(client, 'appointment_reminders');
+  await assertColumns(client, 'appointment_reminders', [
+    {
+      column_name: 'id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'uuidv7()',
+    },
+    {
+      column_name: 'appointment_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'reminder_kind',
+      data_type: 'character varying(30)',
+      character_maximum_length: 30,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'schedule_version',
+      data_type: 'integer',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'idempotency_key',
+      data_type: 'character varying(200)',
+      character_maximum_length: 200,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'available_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'status',
+      data_type: 'character varying(20)',
+      character_maximum_length: 20,
+      is_nullable: 'NO',
+      default_expr: "'PENDING'::character varying",
+    },
+    {
+      column_name: 'attempt_count',
+      data_type: 'integer',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: '0',
+    },
+    {
+      column_name: 'max_attempts',
+      data_type: 'integer',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: '5',
+    },
+    {
+      column_name: 'locked_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'locked_until',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'locked_by',
+      data_type: 'character varying(100)',
+      character_maximum_length: 100,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'lease_token',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'last_error_category',
+      data_type: 'character varying(50)',
+      character_maximum_length: 50,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'delivered_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'cancelled_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'superseded_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'dead_lettered_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'created_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+    {
+      column_name: 'updated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+  ]);
+  await assertConstraints(client, 'appointment_reminders', {
+    appointment_reminders_pkey: {
+      type: 'p',
+      columns: ['id'],
+    },
+    appointment_reminders_appointment_id_fkey: {
+      type: 'f',
+      columns: ['appointment_id'],
+      definitionFragments: [
+        'references appointments(id)',
+        'on delete restrict',
+      ],
+    },
+    appointment_reminders_kind_check: {
+      type: 'c',
+      columns: ['reminder_kind'],
+      definitionFragments: ["reminder_kind::text = 'APPOINTMENT_24H'::text"],
+    },
+    appointment_reminders_status_check: {
+      type: 'c',
+      columns: ['status'],
+      definitionFragments: [
+        'status::text = upper(btrim(status::text))',
+        `status::text = any (array[${allowedReminderStatuses
+          .map((value) => `'${value}'::character varying`)
+          .join(', ')}]::text[])`,
+      ],
+    },
+    appointment_reminders_schedule_version_positive_check: {
+      type: 'c',
+      columns: ['schedule_version'],
+      definitionFragments: ['schedule_version > 0'],
+    },
+    appointment_reminders_attempt_count_nonnegative_check: {
+      type: 'c',
+      columns: ['attempt_count'],
+      definitionFragments: ['attempt_count >= 0'],
+    },
+    appointment_reminders_max_attempts_positive_check: {
+      type: 'c',
+      columns: ['max_attempts'],
+      definitionFragments: ['max_attempts > 0'],
+    },
+    appointment_reminders_state_consistency_check: {
+      type: 'c',
+      columns: [
+        'status',
+        'locked_at',
+        'locked_until',
+        'locked_by',
+        'lease_token',
+        'delivered_at',
+        'cancelled_at',
+        'superseded_at',
+        'dead_lettered_at',
+      ],
+      definitionFragments: [
+        "status::text = 'PENDING'::text",
+        "status::text = 'PROCESSING'::text",
+        "status::text = 'DELIVERED'::text",
+        "status::text = 'CANCELLED'::text",
+        "status::text = 'SUPERSEDED'::text",
+        "status::text = 'DEAD_LETTER'::text",
+      ],
+    },
+    appointment_reminders_appointment_kind_version_key: {
+      type: 'u',
+      columns: ['appointment_id', 'reminder_kind', 'schedule_version'],
+    },
+    appointment_reminders_idempotency_key_key: {
+      type: 'u',
+      columns: ['idempotency_key'],
+    },
+  });
+  await assertIndexes(client, 'appointment_reminders', {
+    appointment_reminders_appointment_id_idx: {
+      definitionFragments: [
+        'create index appointment_reminders_appointment_id_idx',
+        '(appointment_id)',
+      ],
+    },
+    appointment_reminders_due_idx: {
+      definitionFragments: [
+        'create index appointment_reminders_due_idx',
+        '(available_at, id)',
+        "where ((status)::text = 'PENDING'::text)",
+      ],
+    },
+    appointment_reminders_expired_processing_idx: {
+      definitionFragments: [
+        'create index appointment_reminders_expired_processing_idx',
+        '(locked_until, id)',
+        "where ((status)::text = 'PROCESSING'::text)",
+      ],
+    },
+    appointment_reminders_dead_letter_backlog_idx: {
+      definitionFragments: [
+        'create index appointment_reminders_dead_letter_backlog_idx',
+        '(dead_lettered_at, id)',
+        "where ((status)::text = 'DEAD_LETTER'::text)",
+      ],
+    },
+  });
+}
+
 async function verifySchema() {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
@@ -1256,8 +1533,9 @@ async function verifySchema() {
       await verifyPatientRegistrationSchema(client);
       await verifyAssignmentSchema(client);
       await verifyAppointmentSchema(client);
+      await verifyAppointmentReminderSchema(client);
       console.log(
-        'Schema verification passed for healthcare_facilities, practitioners, patients, patient_facility_registrations, practitioner_facility_assignments, and appointments.',
+        'Schema verification passed for healthcare_facilities, practitioners, patients, patient_facility_registrations, practitioner_facility_assignments, appointments, and appointment_reminders.',
       );
     } finally {
       client.release();
