@@ -10,7 +10,7 @@
     "test": "vitest run",
     "migrate": "tsx src/migrate.ts",
     "schema:verify": "tsx src/schema-verify.ts",
-    "docs:validate": "redocly lint openapi.yaml",
+    "docs:validate": "npx redocly lint openapi.yaml",
     "test:integration:db": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {

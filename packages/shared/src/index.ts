@@ -38,6 +38,19 @@ export type {
   UpdatePractitionerInput,
 } from './practitioner-api.js';
 export type {
+  Appointment,
+  AppointmentFacilitySummary,
+  AppointmentListQuery,
+  AppointmentListResponse,
+  AppointmentPagination,
+  AppointmentPatientSummary,
+  AppointmentPractitionerSummary,
+  AppointmentStatus,
+  CancelAppointmentInput,
+  CreateAppointmentInput,
+  UpdateAppointmentInput,
+} from './appointment-api.js';
+export type {
   AdministrativeSex,
   CreatePatientInput,
   Patient,
@@ -49,3 +62,4 @@ export type {
   UpdatePatientInput,
 } from './patient-api.js';
 export { administrativeSexes } from './patient-api.js';
+export { appointmentStatuses } from './appointment-api.js';

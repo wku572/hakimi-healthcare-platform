@@ -11,6 +11,10 @@ describe('migration catalog', () => {
     const catalog = buildMigrationCatalogFromFiles(
       [
         {
+          filename: '004_create_appointments.sql',
+          sql: '-- up 4',
+        },
+        {
           filename: '003_create_patients_and_registrations.sql',
           sql: '-- up 3',
         },
@@ -18,6 +22,10 @@ describe('migration catalog', () => {
         { filename: '001_create_healthcare_facilities.sql', sql: '-- up 1' },
       ],
       [
+        {
+          filename: '004_create_appointments.sql',
+          sql: '-- down 4',
+        },
         {
           filename: '003_create_patients_and_registrations.sql',
           sql: '-- down 3',
@@ -31,6 +39,7 @@ describe('migration catalog', () => {
       '001',
       '002',
       '003',
+      '004',
     ]);
   });
 
