@@ -114,10 +114,38 @@ export function createPatientNotFoundError(message = 'Patient not found') {
   return new ApiError(404, 'PATIENT_NOT_FOUND', message);
 }
 
+export function createInactivePatientError(message = 'Patient is inactive') {
+  return new ApiError(409, 'INACTIVE_PATIENT', message);
+}
+
+export function createPatientRegistrationNotFoundError(
+  message = 'Patient is not registered at this facility',
+) {
+  return new ApiError(404, 'PATIENT_REGISTRATION_NOT_FOUND', message);
+}
+
 export function createPatientRegistrationConflictError(
   message = 'Patient registration already exists',
 ) {
   return new ApiError(409, 'PATIENT_REGISTRATION_CONFLICT', message);
+}
+
+export function createAppointmentNotFoundError(
+  message = 'Appointment not found',
+) {
+  return new ApiError(404, 'APPOINTMENT_NOT_FOUND', message);
+}
+
+export function createAppointmentConflictError(
+  message = 'Appointment conflicts with an existing appointment',
+) {
+  return new ApiError(409, 'APPOINTMENT_CONFLICT', message);
+}
+
+export function createAppointmentStateConflictError(
+  message = 'Appointment cannot be modified in its current state',
+) {
+  return new ApiError(409, 'APPOINTMENT_STATE_CONFLICT', message);
 }
 
 export function createInternalError() {

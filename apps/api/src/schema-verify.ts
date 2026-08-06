@@ -16,6 +16,14 @@ const allowedAdministrativeSexes = [
   'unknown',
 ] as const;
 
+const allowedAppointmentStatuses = [
+  'SCHEDULED',
+  'CONFIRMED',
+  'COMPLETED',
+  'CANCELLED',
+  'NO_SHOW',
+] as const;
+
 type ColumnMetadata = {
   column_name: string;
   data_type: string;
@@ -212,7 +220,7 @@ async function assertConstraints(
        AND att.attnum = key.attnum
       WHERE n.nspname = 'public'
         AND c.relname = $1
-        AND con.contype IN ('p', 'u', 'c', 'f')
+        AND con.contype IN ('p', 'u', 'c', 'f', 'x')
       GROUP BY con.conname, con.contype, con.oid
       ORDER BY con.conname
     `,
@@ -1040,6 +1048,200 @@ async function verifyPatientRegistrationSchema(client: {
   });
 }
 
+async function verifyAppointmentSchema(client: {
+  query<T extends Record<string, unknown>>(
+    text: string,
+    values?: unknown[],
+  ): Promise<{
+    rows: T[];
+  }>;
+}) {
+  await assertTableExists(client, 'appointments');
+  await assertColumns(client, 'appointments', [
+    {
+      column_name: 'id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'uuidv7()',
+    },
+    {
+      column_name: 'patient_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'practitioner_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'facility_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'scheduled_start',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'scheduled_end',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'status',
+      data_type: 'character varying(20)',
+      character_maximum_length: 20,
+      is_nullable: 'NO',
+      default_expr: "'SCHEDULED'::character varying",
+    },
+    {
+      column_name: 'cancellation_reason',
+      data_type: 'character varying(1000)',
+      character_maximum_length: 1000,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'cancelled_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'created_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+    {
+      column_name: 'updated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+  ]);
+  await assertConstraints(client, 'appointments', {
+    appointments_pkey: {
+      type: 'p',
+      columns: ['id'],
+    },
+    appointments_patient_id_fkey: {
+      type: 'f',
+      columns: ['patient_id'],
+      definitionFragments: ['references patients(id)', 'on delete restrict'],
+    },
+    appointments_practitioner_id_fkey: {
+      type: 'f',
+      columns: ['practitioner_id'],
+      definitionFragments: [
+        'references practitioners(id)',
+        'on delete restrict',
+      ],
+    },
+    appointments_facility_id_fkey: {
+      type: 'f',
+      columns: ['facility_id'],
+      definitionFragments: [
+        'references healthcare_facilities(id)',
+        'on delete restrict',
+      ],
+    },
+    appointments_scheduled_window_check: {
+      type: 'c',
+      columns: ['scheduled_start', 'scheduled_end'],
+      definitionFragments: ['scheduled_start < scheduled_end'],
+    },
+    appointments_status_check: {
+      type: 'c',
+      columns: ['status'],
+      definitionFragments: [
+        'status::text = upper(btrim(status::text))',
+        `(status::text = any (array[${allowedAppointmentStatuses
+          .map((value) => `'${value}'::character varying`)
+          .join(', ')}]::text[]))`,
+      ],
+    },
+    appointments_cancellation_reason_not_blank_check: {
+      type: 'c',
+      columns: ['status', 'cancellation_reason'],
+      definitionFragments: [
+        "status::text <> 'CANCELLED'::text OR btrim(cancellation_reason::text) <> ''::text",
+      ],
+    },
+    appointments_cancelled_at_check: {
+      type: 'c',
+      columns: ['status', 'cancelled_at'],
+      definitionFragments: [
+        "status::text = 'CANCELLED'::text AND cancelled_at IS NOT NULL OR status::text <> 'CANCELLED'::text AND cancelled_at IS NULL",
+      ],
+    },
+    appointments_practitioner_time_no_overlap_excl: {
+      type: 'x',
+      columns: ['practitioner_id'],
+      definitionFragments: [
+        'exclude using gist',
+        'practitioner_id with =',
+        "tstzrange(scheduled_start, scheduled_end, '[)'::text) with &&",
+        `where (status::text = any (array[${allowedAppointmentStatuses
+          .filter((value) => value === 'SCHEDULED' || value === 'CONFIRMED')
+          .map((value) => `'${value}'::character varying`)
+          .join(', ')}]::text[]))`,
+      ],
+    },
+  });
+  await assertIndexes(client, 'appointments', {
+    appointments_patient_id_idx: {
+      definitionFragments: [
+        'create index appointments_patient_id_idx',
+        '(patient_id)',
+      ],
+    },
+    appointments_practitioner_id_idx: {
+      definitionFragments: [
+        'create index appointments_practitioner_id_idx',
+        '(practitioner_id)',
+      ],
+    },
+    appointments_facility_id_idx: {
+      definitionFragments: [
+        'create index appointments_facility_id_idx',
+        '(facility_id)',
+      ],
+    },
+    appointments_status_idx: {
+      definitionFragments: ['create index appointments_status_idx', '(status)'],
+    },
+    appointments_scheduled_start_idx: {
+      definitionFragments: [
+        'create index appointments_scheduled_start_idx',
+        '(scheduled_start, id)',
+      ],
+    },
+    appointments_practitioner_time_idx: {
+      definitionFragments: [
+        'create index appointments_practitioner_time_idx',
+        '(practitioner_id, scheduled_start, scheduled_end, id)',
+      ],
+    },
+  });
+}
+
 async function verifySchema() {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
@@ -1053,8 +1255,9 @@ async function verifySchema() {
       await verifyPatientSchema(client);
       await verifyPatientRegistrationSchema(client);
       await verifyAssignmentSchema(client);
+      await verifyAppointmentSchema(client);
       console.log(
-        'Schema verification passed for healthcare_facilities, practitioners, patients, patient_facility_registrations, and practitioner_facility_assignments.',
+        'Schema verification passed for healthcare_facilities, practitioners, patients, patient_facility_registrations, practitioner_facility_assignments, and appointments.',
       );
     } finally {
       client.release();

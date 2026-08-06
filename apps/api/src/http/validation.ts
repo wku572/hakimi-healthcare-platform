@@ -21,6 +21,7 @@ const FIELD_LABELS: Record<string, string> = {
   practitionerId: 'Practitioner ID',
   assignmentId: 'Assignment ID',
   patientId: 'Patient ID',
+  appointmentId: 'Appointment ID',
   firstName: 'First name',
   middleName: 'Middle name',
   lastName: 'Last name',
@@ -33,6 +34,12 @@ const FIELD_LABELS: Record<string, string> = {
   isPrimary: 'Primary assignment',
   facilityId: 'Facility ID',
   medicalRecordNumber: 'Medical record number',
+  scheduledStart: 'Scheduled start',
+  scheduledEnd: 'Scheduled end',
+  status: 'Status',
+  cancellationReason: 'Cancellation reason',
+  from: 'From',
+  to: 'To',
 };
 
 function labelFor(path: ReadonlyArray<string | number | symbol>) {

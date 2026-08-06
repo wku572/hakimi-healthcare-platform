@@ -321,6 +321,47 @@ List filters:
 - `administrativeSex`
 - `isActive`
 
+## Appointments API
+
+The appointments API lives under `/api/v1/appointments`.
+
+Route summary:
+
+- `POST /api/v1/appointments` - create an appointment
+- `GET /api/v1/appointments` - list appointments with pagination and filters
+- `GET /api/v1/appointments/:appointmentId` - fetch one appointment by UUID
+- `PATCH /api/v1/appointments/:appointmentId` - update appointment time or status
+- `POST /api/v1/appointments/:appointmentId/cancel` - cancel an appointment without deleting it
+
+Appointment rules:
+
+- Each appointment links one patient, practitioner, and facility.
+- `scheduledStart` must be earlier than `scheduledEnd`.
+- Creation rejects appointments that start in the past.
+- Appointments require an active facility, an active practitioner assigned to that facility, and an active patient registered at that facility.
+- Overlapping non-cancelled appointments for the same practitioner are rejected.
+- Cancellation requires a nonblank reason and preserves the appointment record for history.
+- Status values are `SCHEDULED`, `CONFIRMED`, `COMPLETED`, `CANCELLED`, and `NO_SHOW`.
+
+List filters:
+
+- `page` default `1`
+- `pageSize` default `20`, maximum `100`
+- `facilityId`
+- `practitionerId`
+- `patientId`
+- `status`
+- `from`
+- `to`
+
+Validation and normalization rules:
+
+- Request bodies are strict JSON objects.
+- Unknown properties are rejected.
+- ISO date-time values must include a timezone offset.
+- Status values are normalized to uppercase.
+- Optional blank strings are rejected where a nonblank value is required.
+
 ## Testing
 
 - Unit tests: `npm test`
