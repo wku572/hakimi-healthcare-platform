@@ -11,7 +11,7 @@ This repository starts as a monorepo foundation for the web app, API, shared typ
 - `docs` - project documentation
 - `infrastructure` - empty structure for future DevOps configuration
 - `.github/workflows` - reserved for future CI/CD
-- `compose.yaml` - local PostgreSQL container for local development
+- `compose.yaml` - production-shaped local container stack for the API, worker, migrations, and PostgreSQL
 - `apps/api/database/migrations/up` - ordered SQL migration files
 - `apps/api/database/migrations/down` - matching rollback SQL files
 
@@ -68,6 +68,88 @@ The API expects:
    ```bash
    npm run dev
    ```
+
+## Containerized Deployment
+
+The repository now includes a production-shaped container stack built from one reusable application image.
+
+Build the image directly:
+
+```bash
+docker build -t hakimi-healthcare-platform:local .
+```
+
+The reusable image supports these runtime commands:
+
+- API: `node server.js`
+- Worker: `node reminders/worker.js`
+- Migration status: `node migrate.js status`
+- Schema verification: `node schema-verify.js`
+
+Start the complete stack:
+
+```bash
+docker compose up --build
+```
+
+The stack includes:
+
+- `postgres` - local PostgreSQL with a persistent named volume
+- `migrate` - a one-shot migration service that runs before the app processes
+- `api` - the HTTP API
+- `worker` - the reminder worker
+
+The migration service is intentionally separate from the app processes. If it fails, the API and worker do not start.
+
+Useful checks:
+
+```bash
+docker compose config
+docker compose ps
+docker compose logs -f migrate api worker
+```
+
+Health endpoints:
+
+- Liveness: `GET /health/live`
+- Readiness: `GET /health/ready`
+
+The Compose health check uses Node's built-in `fetch` from inside the final image, so it does not depend on `curl`.
+
+The API and worker write logs to stdout and stderr through `console`, which keeps container logs simple and privacy-safe.
+
+Graceful shutdown:
+
+- The API closes its HTTP server and PostgreSQL pool on `SIGINT` and `SIGTERM`.
+- The reminder worker stops polling and closes its PostgreSQL pool on `SIGINT` and `SIGTERM`.
+
+Environment configuration:
+
+- `.env.example` contains placeholders only.
+- The containers expect environment variables to be injected at runtime.
+- If you want local convenience values, create a private `.env` file from `.env.example`.
+
+PostgreSQL persistence:
+
+- The `postgres_data_sprint2` named volume persists data across normal `docker compose down` and `docker compose up` cycles.
+- `docker compose down -v` deletes the database volume and is destructive.
+
+Troubleshooting:
+
+- If `migrate` fails, inspect `docker compose logs -f migrate` first.
+- If the API stays unhealthy, confirm the database is reachable and migrations completed successfully.
+- If the worker exits, inspect `docker compose logs -f worker` and verify `DATABASE_URL`.
+
+Rollback warning:
+
+- `npm run db:migrate:down` rolls back only the latest migration.
+- Backward-incompatible schema changes should be introduced with a new migration, not by editing an applied one.
+
+Production limits:
+
+- Authentication and authorization are not implemented yet.
+- Do not bake secrets into the image or commit production credentials.
+- Use environment injection or an external secret manager in real deployments.
 
 ## Migrations
 

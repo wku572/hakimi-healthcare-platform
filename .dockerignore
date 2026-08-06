@@ -1,0 +1,17 @@
+.git
+.github
+.env
+.env.*
+node_modules
+dist
+build
+coverage
+*.tsbuildinfo
+apps/web/dist
+apps/web/node_modules
+apps/api/dist
+apps/api/node_modules
+packages/shared/dist
+packages/shared/node_modules
+docs
+infrastructure

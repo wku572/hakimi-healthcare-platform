@@ -279,6 +279,9 @@ export async function runReminderWorker(
 async function main() {
   const config = loadReminderWorkerConfig();
   const pool = createPostgresPool(config.DATABASE_URL);
+  pool.on('error', () => {
+    console.error('PostgreSQL connection error detected.');
+  });
   const repository = createReminderRepository(pool);
   const adapter = createDevelopmentReminderDeliveryAdapter(console);
   const abortController = new AbortController();
