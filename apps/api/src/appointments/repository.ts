@@ -11,6 +11,7 @@ import type {
   UpdateAppointmentInput,
 } from '@hakimi/shared';
 import type { Pool } from 'pg';
+import type { DbExecutor } from '../database-executor.js';
 import {
   createAppointmentConflictError,
   createFacilityNotFoundError,
@@ -18,15 +19,6 @@ import {
   createPatientNotFoundError,
   createPractitionerNotFoundError,
 } from '../http/api-error.js';
-
-type DbExecutor = {
-  query<T extends Record<string, unknown>>(
-    text: string,
-    values?: unknown[],
-  ): Promise<{
-    rows: T[];
-  }>;
-};
 
 type AppointmentRow = {
   id: string;
@@ -36,6 +28,7 @@ type AppointmentRow = {
   scheduled_start: Date | string;
   scheduled_end: Date | string;
   status: string;
+  schedule_version: number;
   cancellation_reason: string | null;
   cancelled_at: Date | string | null;
   created_at: Date | string;
@@ -69,6 +62,15 @@ type AppointmentStatusRow = {
   is_active: boolean;
 };
 
+type AppointmentScheduleStateRow = {
+  id: string;
+  practitioner_id: string;
+  status: string;
+  schedule_version: number;
+  scheduled_start: Date | string;
+  scheduled_end: Date | string;
+};
+
 type PractitionerAssignmentStatusRow = {
   id: string;
 };
@@ -98,6 +100,7 @@ const APPOINTMENT_SELECT_COLUMNS = `
   a.scheduled_start,
   a.scheduled_end,
   a.status,
+  a.schedule_version,
   a.cancellation_reason,
   a.cancelled_at,
   a.created_at,
@@ -268,6 +271,28 @@ async function queryAppointmentById(
   return result.rows[0] ? mapAppointmentRow(result.rows[0]) : null;
 }
 
+async function queryAppointmentScheduleStateById(
+  db: DbExecutor,
+  id: string,
+): Promise<AppointmentScheduleStateRow | null> {
+  const result = await db.query<AppointmentScheduleStateRow>(
+    `
+      SELECT
+        id,
+        practitioner_id,
+        status,
+        schedule_version,
+        scheduled_start,
+        scheduled_end
+      FROM appointments
+      WHERE id = $1
+    `,
+    [id],
+  );
+
+  return result.rows[0] ?? null;
+}
+
 function translateDatabaseError(error: unknown): never {
   if (
     typeof error === 'object' &&
@@ -313,6 +338,10 @@ export type AppointmentRepository = {
     db?: DbExecutor,
   ): Promise<Appointment>;
   findAppointmentById(id: string, db?: DbExecutor): Promise<Appointment | null>;
+  findAppointmentScheduleStateById(
+    id: string,
+    db?: DbExecutor,
+  ): Promise<AppointmentScheduleStateRow | null>;
   listAppointments(
     query: AppointmentListQuery,
     db?: DbExecutor,
@@ -429,6 +458,10 @@ export function createAppointmentRepository(
       return queryAppointmentById(executor, id);
     },
 
+    async findAppointmentScheduleStateById(id, executor = db) {
+      return queryAppointmentScheduleStateById(executor, id);
+    },
+
     async listAppointments(query, executor = db) {
       const { whereSql, values } = buildAppointmentFilterSql(query);
       const countResult = await executor.query<{ total_items: number }>(
@@ -499,13 +532,22 @@ export function createAppointmentRepository(
             `${APPOINTMENT_MUTABLE_COLUMN_MAP[key]} = $${index + 1}`,
         )
         .join(', ');
+      const hasTimeChanges = entries.some(
+        ([key]) => key === 'scheduledStart' || key === 'scheduledEnd',
+      );
+      const updateFragments = [setSql];
+
+      if (hasTimeChanges) {
+        updateFragments.push('schedule_version = schedule_version + 1');
+      }
+
       values.push(id);
 
       try {
         const result = await executor.query<{ id: string }>(
           `
             UPDATE appointments
-            SET ${setSql}, updated_at = now()
+            SET ${updateFragments.join(', ')}, updated_at = now()
             WHERE id = $${values.length}
             RETURNING id
           `,

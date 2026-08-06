@@ -11,7 +11,8 @@
     "migrate": "tsx src/migrate.ts",
     "schema:verify": "tsx src/schema-verify.ts",
     "docs:validate": "npx redocly lint openapi.yaml",
-    "test:integration:db": "vitest run --config vitest.integration.config.ts"
+    "test:integration:db": "vitest run --config vitest.integration.config.ts",
+    "worker:reminders": "tsx src/reminders/worker.ts"
   },
   "dependencies": {
     "express": "^5.0.0",

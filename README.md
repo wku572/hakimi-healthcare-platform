@@ -35,14 +35,21 @@ This repository starts as a monorepo foundation for the web app, API, shared typ
    - If `.env` already exists, keep it and add only missing values.
    - If `.env` does not exist, create it from `.env.example`.
 
-   The API expects:
+The API expects:
 
-   - `PORT`
-   - `NODE_ENV`
-   - `POSTGRES_DB`
-   - `POSTGRES_USER`
-   - `POSTGRES_PASSWORD`
-   - `DATABASE_URL`
+- `PORT`
+- `NODE_ENV`
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `DATABASE_URL`
+- `REMINDER_WORKER_ID`
+- `REMINDER_POLL_INTERVAL_MS`
+- `REMINDER_BATCH_SIZE`
+- `REMINDER_LEASE_MS`
+- `REMINDER_MAX_ATTEMPTS`
+- `REMINDER_BACKOFF_BASE_MS`
+- `REMINDER_BACKOFF_CAP_MS`
 
 3. Start PostgreSQL for local development:
 
@@ -342,6 +349,13 @@ Appointment rules:
 - Overlapping non-cancelled appointments for the same practitioner are rejected.
 - Cancellation requires a nonblank reason and preserves the appointment record for history.
 - Status values are `SCHEDULED`, `CONFIRMED`, `COMPLETED`, `CANCELLED`, and `NO_SHOW`.
+- Appointment confirmations, reschedules, cancellations, completions, and no-shows maintain reminder rows in the same transaction as the appointment change.
+
+Reminder worker:
+
+- `npm run worker:reminders` starts the background reminder worker.
+- The worker uses PostgreSQL only; there is no Redis, queue broker, or worker HTTP server yet.
+- Reminder delivery is a development-safe no-op adapter until a real notification channel is introduced.
 
 List filters:
 
@@ -432,6 +446,8 @@ Warning: `docker compose down --volumes` deletes the local PostgreSQL data volum
 - the `facility_type` check constraint matches the allowed values
 - the `practitioners` table exists with stable unique constraints, checks, and defaults
 - the `practitioner_facility_assignments` table exists with foreign keys, the duplicate-assignment unique constraint, and the partial unique index that enforces one active primary assignment per practitioner
+- the `appointments` table includes `schedule_version` and the reminder-related check constraint
+- the `appointment_reminders` table exists with bounded string columns, state checks, unique keys, and processing indexes
 
 ## Notes
 

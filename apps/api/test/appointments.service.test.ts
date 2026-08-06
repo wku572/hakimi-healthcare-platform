@@ -6,6 +6,7 @@ function createRepositoryMock() {
     withTransaction: vi.fn(),
     createAppointment: vi.fn(),
     findAppointmentById: vi.fn(),
+    findAppointmentScheduleStateById: vi.fn(),
     listAppointments: vi.fn(),
     updateAppointment: vi.fn(),
     cancelAppointment: vi.fn(),
@@ -63,6 +64,15 @@ const appointment = {
     city: 'Addis Ababa',
     isActive: true,
   },
+};
+
+const appointmentScheduleState = {
+  id: appointmentId,
+  practitioner_id: practitionerId,
+  status: 'SCHEDULED' as const,
+  schedule_version: 1,
+  scheduled_start: '2026-08-08T06:00:00.000Z',
+  scheduled_end: '2026-08-08T06:30:00.000Z',
 };
 
 describe('appointment service', () => {
@@ -246,6 +256,9 @@ describe('appointment service', () => {
     const repository = createRepositoryMock();
     const tx = { query: vi.fn() };
     repository.withTransaction.mockImplementation(async (work) => work(tx));
+    repository.findAppointmentScheduleStateById.mockResolvedValue(
+      appointmentScheduleState,
+    );
     repository.findAppointmentById.mockResolvedValue(appointment);
     repository.findConflictingAppointment.mockResolvedValue(null);
     repository.updateAppointment.mockResolvedValue({
@@ -264,7 +277,7 @@ describe('appointment service', () => {
       status: 'CONFIRMED',
     });
 
-    expect(repository.findAppointmentById).toHaveBeenCalledWith(
+    expect(repository.findAppointmentScheduleStateById).toHaveBeenCalledWith(
       appointmentId,
       tx,
     );
@@ -286,10 +299,147 @@ describe('appointment service', () => {
     );
   });
 
+  it('creates, supersedes, and cancels reminders during lifecycle transitions', async () => {
+    const repository = createRepositoryMock();
+    const tx = { query: vi.fn() };
+    const reminderCommands = {
+      createAppointmentReminder: vi.fn().mockResolvedValue(null),
+      cancelActiveAppointmentReminders: vi.fn().mockResolvedValue(1),
+      supersedeAppointmentReminders: vi.fn().mockResolvedValue(1),
+    };
+
+    repository.withTransaction.mockImplementation(async (work) => work(tx));
+    repository.findAppointmentScheduleStateById.mockResolvedValue({
+      ...appointmentScheduleState,
+      status: 'SCHEDULED',
+    });
+    repository.findConflictingAppointment.mockResolvedValue(null);
+    repository.updateAppointment.mockResolvedValue({
+      ...appointment,
+      status: 'CONFIRMED',
+      scheduledStart: '2026-08-08T05:45:00.000Z',
+      scheduledEnd: '2026-08-08T06:15:00.000Z',
+      updatedAt: '2026-08-06T00:01:00.000Z',
+    });
+
+    const service = createAppointmentService(repository, reminderCommands);
+
+    await service.updateAppointment(appointmentId, {
+      status: 'CONFIRMED',
+    });
+
+    expect(reminderCommands.createAppointmentReminder).toHaveBeenCalledWith(
+      {
+        appointmentId,
+        reminderKind: 'APPOINTMENT_24H',
+        scheduleVersion: 1,
+        idempotencyKey: `${appointmentId}:APPOINTMENT_24H:1`,
+        availableAt: '2026-08-07T06:00:00.000Z',
+      },
+      tx,
+    );
+
+    repository.findAppointmentScheduleStateById.mockResolvedValue({
+      ...appointmentScheduleState,
+      status: 'CONFIRMED',
+      schedule_version: 1,
+    });
+    repository.updateAppointment.mockResolvedValue({
+      ...appointment,
+      status: 'CONFIRMED',
+      scheduledStart: '2026-08-08T05:45:00.000Z',
+      scheduledEnd: '2026-08-08T06:15:00.000Z',
+      updatedAt: '2026-08-06T00:02:00.000Z',
+    });
+
+    await service.updateAppointment(appointmentId, {
+      scheduledStart: '2026-08-08T08:45:00+03:00',
+      scheduledEnd: '2026-08-08T09:15:00+03:00',
+    });
+
+    expect(reminderCommands.supersedeAppointmentReminders).toHaveBeenCalledWith(
+      appointmentId,
+      2,
+      tx,
+    );
+    expect(reminderCommands.createAppointmentReminder).toHaveBeenLastCalledWith(
+      {
+        appointmentId,
+        reminderKind: 'APPOINTMENT_24H',
+        scheduleVersion: 2,
+        idempotencyKey: `${appointmentId}:APPOINTMENT_24H:2`,
+        availableAt: '2026-08-07T05:45:00.000Z',
+      },
+      tx,
+    );
+
+    repository.findAppointmentById.mockResolvedValue(appointment);
+    repository.cancelAppointment.mockResolvedValue({
+      ...appointment,
+      status: 'CANCELLED',
+      cancellationReason: 'Patient requested a later time',
+      cancelledAt: '2026-08-06T00:03:00.000Z',
+      updatedAt: '2026-08-06T00:03:00.000Z',
+    });
+
+    await service.cancelAppointment(appointmentId, {
+      cancellationReason: 'Patient requested a later time',
+    });
+
+    expect(
+      reminderCommands.cancelActiveAppointmentReminders,
+    ).toHaveBeenCalledWith(appointmentId, tx);
+  });
+
+  it('skips creating a reminder when confirmation happens too late for the reminder window', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-07T12:00:00.000Z'));
+    try {
+      const repository = createRepositoryMock();
+      const tx = { query: vi.fn() };
+      const reminderCommands = {
+        createAppointmentReminder: vi.fn().mockResolvedValue(null),
+        cancelActiveAppointmentReminders: vi.fn().mockResolvedValue(0),
+        supersedeAppointmentReminders: vi.fn().mockResolvedValue(0),
+      };
+
+      repository.withTransaction.mockImplementation(async (work) => work(tx));
+      repository.findAppointmentScheduleStateById.mockResolvedValue({
+        id: appointmentId,
+        practitioner_id: practitionerId,
+        status: 'SCHEDULED',
+        schedule_version: 1,
+        scheduled_start: '2026-08-07T15:00:00.000Z',
+        scheduled_end: '2026-08-07T15:30:00.000Z',
+      });
+      repository.findConflictingAppointment.mockResolvedValue(null);
+      repository.updateAppointment.mockResolvedValue({
+        ...appointment,
+        status: 'CONFIRMED',
+        scheduledStart: '2026-08-07T15:00:00.000Z',
+        scheduledEnd: '2026-08-07T15:30:00.000Z',
+        updatedAt: '2026-08-07T12:00:00.000Z',
+      });
+
+      const service = createAppointmentService(repository, reminderCommands);
+
+      await service.updateAppointment(appointmentId, {
+        status: 'CONFIRMED',
+      });
+
+      expect(reminderCommands.createAppointmentReminder).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('rejects invalid appointment transitions and preserves cancelled history', async () => {
     const repository = createRepositoryMock();
     const tx = { query: vi.fn() };
     repository.withTransaction.mockImplementation(async (work) => work(tx));
+    repository.findAppointmentScheduleStateById.mockResolvedValue(
+      appointmentScheduleState,
+    );
     repository.findAppointmentById
       .mockResolvedValueOnce(appointment)
       .mockResolvedValueOnce({
