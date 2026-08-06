@@ -1,0 +1,23 @@
+name: Docker Image Validation
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'compose.yaml'
+      - 'package-lock.json'
+      - 'package.json'
+      - 'apps/**'
+      - 'packages/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build -t hakimi-healthcare-platform:pr .

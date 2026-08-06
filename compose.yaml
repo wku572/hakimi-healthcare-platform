@@ -1,3 +1,17 @@
+x-app-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+
+x-app-runtime: &app-runtime
+  init: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  read_only: true
+  tmpfs:
+    - /tmp
+
 services:
   postgres:
     image: postgres:18-alpine
@@ -5,17 +19,86 @@ services:
     ports:
       - '127.0.0.1:5432:5432'
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-hakimi_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-hakimi_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-development-only}
     volumes:
       - postgres_data_sprint2:/var/lib/postgresql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  migrate:
+    <<: *app-runtime
+    image: hakimi-healthcare-platform:local
+    build: *app-build
+    restart: 'no'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: ${PORT:-3001}
+      NODE_ENV: production
+      POSTGRES_DB: ${POSTGRES_DB:-hakimi_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-hakimi_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-development-only}
+      DATABASE_URL: 'postgresql://${POSTGRES_USER:-hakimi_dev}:${POSTGRES_PASSWORD:-change-me-development-only}@postgres:5432/${POSTGRES_DB:-hakimi_dev}'
+    command: ['node', 'migrate.js', 'up']
+
+  api:
+    <<: *app-runtime
+    image: hakimi-healthcare-platform:local
+    build: *app-build
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - '${PORT:-3001}:${PORT:-3001}'
+    environment:
+      PORT: ${PORT:-3001}
+      NODE_ENV: production
+      POSTGRES_DB: ${POSTGRES_DB:-hakimi_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-hakimi_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-development-only}
+      DATABASE_URL: 'postgresql://${POSTGRES_USER:-hakimi_dev}:${POSTGRES_PASSWORD:-change-me-development-only}@postgres:5432/${POSTGRES_DB:-hakimi_dev}'
+    command: ['node', 'server.js']
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '--input-type=module',
+          '-e',
+          "const port = process.env.PORT ?? '3001'; const response = await fetch('http://127.0.0.1:' + port + '/health/ready'); process.exit(response.ok ? 0 : 1);",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  worker:
+    <<: *app-runtime
+    image: hakimi-healthcare-platform:local
+    build: *app-build
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: 'postgresql://${POSTGRES_USER:-hakimi_dev}:${POSTGRES_PASSWORD:-change-me-development-only}@postgres:5432/${POSTGRES_DB:-hakimi_dev}'
+      REMINDER_WORKER_ID: ${REMINDER_WORKER_ID:-reminder-worker-compose}
+      REMINDER_POLL_INTERVAL_MS: ${REMINDER_POLL_INTERVAL_MS:-1000}
+      REMINDER_BATCH_SIZE: ${REMINDER_BATCH_SIZE:-25}
+      REMINDER_LEASE_MS: ${REMINDER_LEASE_MS:-120000}
+      REMINDER_MAX_ATTEMPTS: ${REMINDER_MAX_ATTEMPTS:-5}
+      REMINDER_BACKOFF_BASE_MS: ${REMINDER_BACKOFF_BASE_MS:-60000}
+      REMINDER_BACKOFF_CAP_MS: ${REMINDER_BACKOFF_CAP_MS:-3600000}
+    command: ['node', 'reminders/worker.js']
 
 volumes:
   postgres_data_sprint2:

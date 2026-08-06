@@ -1,14 +1,11 @@
 import dotenv from 'dotenv';
-import { readFileSync } from 'node:fs';
+import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-const localEnvFile = readFileSync(
-  fileURLToPath(new URL('../../../../.env', import.meta.url)),
-  'utf8',
+const localEnvPath = fileURLToPath(
+  new URL('../../../../.env', import.meta.url),
 );
-
-const localEnv = dotenv.parse(localEnvFile);
 
 const workerEnvironmentSchema = z.object({
   DATABASE_URL: z
@@ -37,12 +34,23 @@ const workerEnvironmentSchema = z.object({
 
 export type ReminderWorkerConfig = z.infer<typeof workerEnvironmentSchema>;
 
+function loadLocalEnvironmentOverrides() {
+  if (!fs.existsSync(localEnvPath)) {
+    return {};
+  }
+
+  const localEnvFile = fs.readFileSync(localEnvPath, 'utf8');
+
+  return dotenv.parse(localEnvFile);
+}
+
 export function loadReminderWorkerConfig(
   source: NodeJS.ProcessEnv = process.env,
+  localEnvironmentOverrides = loadLocalEnvironmentOverrides(),
 ): ReminderWorkerConfig {
   const parsed = workerEnvironmentSchema.safeParse({
+    ...localEnvironmentOverrides,
     ...source,
-    ...localEnv,
   });
 
   if (!parsed.success) {

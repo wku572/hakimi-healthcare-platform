@@ -1,14 +1,9 @@
 import dotenv from 'dotenv';
-import { readFileSync } from 'node:fs';
+import * as fs from 'node:fs';
 import { z } from 'zod';
 import { fileURLToPath } from 'node:url';
 
-const localEnvFile = readFileSync(
-  fileURLToPath(new URL('../../../.env', import.meta.url)),
-  'utf8',
-);
-
-const localEnv = dotenv.parse(localEnvFile);
+const localEnvPath = fileURLToPath(new URL('../../../.env', import.meta.url));
 
 const environmentSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535),
@@ -28,12 +23,23 @@ const environmentSchema = z.object({
 
 export type RuntimeEnvironment = z.infer<typeof environmentSchema>;
 
+function loadLocalEnvironmentOverrides() {
+  if (!fs.existsSync(localEnvPath)) {
+    return {};
+  }
+
+  const localEnvFile = fs.readFileSync(localEnvPath, 'utf8');
+
+  return dotenv.parse(localEnvFile);
+}
+
 export function loadEnvironment(
   source: NodeJS.ProcessEnv = process.env,
+  localEnvironmentOverrides = loadLocalEnvironmentOverrides(),
 ): RuntimeEnvironment {
   const parsed = environmentSchema.safeParse({
+    ...localEnvironmentOverrides,
     ...source,
-    ...localEnv,
   });
 
   if (!parsed.success) {
