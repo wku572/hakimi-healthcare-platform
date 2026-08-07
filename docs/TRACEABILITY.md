@@ -6,10 +6,10 @@ No contract-only, implementation-only, duplicate, or missing public operations r
 
 Governance records do not replace operation-level functional mappings. The two candidate architecture decisions below are explicitly subordinate to stakeholder-owned policy records.
 
-| Stakeholder authority | Dependent architecture candidate | Traceability rule |
-| --------------------- | -------------------------------- | ----------------- |
-| [OPEN-08](./REQUIREMENTS.md) | [DEC-01](./REQUIREMENTS.md) | Patient operations remain mapped to `FR-04`; identity architecture cannot be selected before the patient-identity policy is decided. |
-| [OPEN-09](./REQUIREMENTS.md) | [DEC-02](./REQUIREMENTS.md) | Appointment operations remain mapped to `FR-05`; enforcement architecture cannot be selected before appointment business rules are decided. |
+| Stakeholder authority        | Dependent architecture candidate | Traceability rule                                                                                                                           |
+| ---------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| [OPEN-08](./REQUIREMENTS.md) | [DEC-01](./REQUIREMENTS.md)      | Patient operations remain mapped to `FR-04`; identity architecture cannot be selected before the patient-identity policy is decided.        |
+| [OPEN-09](./REQUIREMENTS.md) | [DEC-02](./REQUIREMENTS.md)      | Appointment operations remain mapped to `FR-05`; enforcement architecture cannot be selected before appointment business rules are decided. |
 
 | Method | Path                                                           | OpenAPI                          | Express                                                                                                                                                                     | Canonical ID | Test                                                                                                                                                                                                       | Result  |
 | ------ | -------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |

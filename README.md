@@ -464,6 +464,51 @@ Validation and normalization rules:
 - PostgreSQL integration tests: `npm run test:integration:db`
 - OpenAPI validation: `npm run api:docs:validate`
 
+## Continuous Integration
+
+GitHub Actions runs three stable validation jobs for pull requests, pushes to `main`, and manual workflow dispatches:
+
+- `Static quality gates` installs the lockfile with Node.js 24, validates the product baseline, and runs lint, typecheck, unit tests, OpenAPI validation, workspace builds, and formatting checks.
+- `PostgreSQL integration` starts an isolated PostgreSQL 18 service, reports migration status, applies migrations twice to exercise idempotency, verifies that no migrations remain pending, verifies the schema, and runs database integration tests.
+- `Docker validation` validates `compose.yaml` and builds the production image without publishing it.
+
+CI validation is not deployment. The workflows do not authenticate to a container registry, publish images, inject production secrets, or deploy an environment.
+
+Before opening a pull request, install exactly from the lockfile and run the same checks locally:
+
+```bash
+npm ci
+node scripts/validate-product-baseline.mjs
+npm run lint
+npm run typecheck
+npm test
+npm run api:docs:validate
+npm run build
+npm run format:check
+npm run db:up
+npm run db:status
+npm run db:migrate:status
+npm run db:migrate
+npm run db:migrate
+npm run db:migrate:status
+npm run db:schema:verify
+npm run test:integration:db
+docker compose config
+docker build -t hakimi-healthcare-platform:ci .
+```
+
+The PostgreSQL checks require Docker with Compose v2 and a healthy local PostgreSQL 18 container started through `npm run db:up`. The second `npm run db:migrate` should complete without applying a migration, and final status should show `Pending migrations: - (none)`.
+
+Common failure categories include lockfile installation failures, lint or type errors, unit-test regressions, OpenAPI or product-baseline drift, formatting differences, pending or checksum-invalid migrations, schema drift, PostgreSQL integration failures, invalid Compose configuration, and Docker build failures. Fix the underlying failure; do not skip or weaken the corresponding check.
+
+After these workflows merge, configure branch protection in GitHub repository settings to require:
+
+- `Static quality gates`
+- `PostgreSQL integration`
+- `Docker validation`
+
+Adding workflow files does not configure branch protection automatically.
+
 ## Verification
 
 Run the project checks from the repository root:

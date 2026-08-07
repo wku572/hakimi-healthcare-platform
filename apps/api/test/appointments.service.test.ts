@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAppointmentService } from '../src/appointments/service.js';
 
 function createRepositoryMock() {
@@ -76,6 +76,15 @@ const appointmentScheduleState = {
 };
 
 describe('appointment service', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-06T00:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('normalizes create payloads before calling the repository', async () => {
     const repository = createRepositoryMock();
     const tx = { query: vi.fn() };
