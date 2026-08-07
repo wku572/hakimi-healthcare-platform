@@ -26,7 +26,7 @@
 ## Common Commands
 
 ```bash
-npm install
+npm ci
 npm run dev
 npm run db:up
 npm run db:down
@@ -44,6 +44,9 @@ npm test
 npm run build
 npm run format
 npm run format:check
+node scripts/validate-product-baseline.mjs
+docker compose config
+docker build -t hakimi-healthcare-platform:ci .
 ```
 
 ## Verification Expectations
@@ -53,6 +56,7 @@ npm run format:check
 - `docker compose ps` must show PostgreSQL healthy.
 - `npm run db:migrate:status` must report applied and pending migrations.
 - `npm run db:migrate` must succeed and be idempotent when re-run.
+- A final `npm run db:migrate:status` must report no pending migrations.
 - `npm run db:schema:verify` must succeed when the expected schema is present.
 - `npm run lint` must pass cleanly.
 - `npm run typecheck` must pass cleanly.
@@ -61,6 +65,15 @@ npm run format:check
 - `npm run api:docs:validate` must pass.
 - `npm run build` must succeed for all workspaces.
 - `npm run format:check` must pass.
+- `node scripts/validate-product-baseline.mjs` must pass.
+- `docker build -t hakimi-healthcare-platform:ci .` must build the production image without publishing it.
+
+## Continuous Integration
+
+- Keep the stable GitHub check names `Static quality gates`, `PostgreSQL integration`, and `Docker validation` aligned with branch-protection settings.
+- Use Node.js 24 and `npm ci` in CI so installs follow `package-lock.json` exactly.
+- Keep workflow permissions least-privileged and never place production credentials or deployment behavior in validation jobs.
+- Treat CI validation and deployment as separate concerns. Workflow files do not configure GitHub branch protection automatically.
 
 ## Change Discipline
 

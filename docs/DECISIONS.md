@@ -21,7 +21,7 @@ A decision in this documentation baseline is a rule that needs explicit stakehol
 
 ## Decision Authority And Dependencies
 
-| Stakeholder authority | Dependent candidate architecture record | Authority boundary | Explicit dependency |
-| --------------------- | --------------------------------------- | ------------------ | ------------------- |
-| [OPEN-08](./REQUIREMENTS.md) | [DEC-01](./REQUIREMENTS.md) | `OPEN-08` decides patient identity, duplicate-detection, merge, demographic, and multi-facility policy. `DEC-01` may only select technical identity-resolution mechanisms. | `DEC-01` cannot advance until `OPEN-08` defines the policy it must implement. |
-| [OPEN-09](./REQUIREMENTS.md) | [DEC-02](./REQUIREMENTS.md) | `OPEN-09` decides appointment boundaries, blocking statuses, transitions, rescheduling, duration, and cancellation policy. `DEC-02` may only select enforcement boundaries and mechanisms. | `DEC-02` cannot advance until `OPEN-09` defines the policy it must implement. |
+| Stakeholder authority        | Dependent candidate architecture record | Authority boundary                                                                                                                                                                         | Explicit dependency                                                           |
+| ---------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| [OPEN-08](./REQUIREMENTS.md) | [DEC-01](./REQUIREMENTS.md)             | `OPEN-08` decides patient identity, duplicate-detection, merge, demographic, and multi-facility policy. `DEC-01` may only select technical identity-resolution mechanisms.                 | `DEC-01` cannot advance until `OPEN-08` defines the policy it must implement. |
+| [OPEN-09](./REQUIREMENTS.md) | [DEC-02](./REQUIREMENTS.md)             | `OPEN-09` decides appointment boundaries, blocking statuses, transitions, rescheduling, duration, and cancellation policy. `DEC-02` may only select enforcement boundaries and mechanisms. | `DEC-02` cannot advance until `OPEN-09` defines the policy it must implement. |

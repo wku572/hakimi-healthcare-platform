@@ -1,0 +1,115 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-quality-gates:
+    name: Static quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Validate product baseline
+        run: node scripts/validate-product-baseline.mjs
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Validate OpenAPI
+        run: npm run api:docs:validate
+
+      - name: Build workspaces
+        run: npm run build
+
+      - name: Check formatting
+        run: npm run format:check
+
+  postgres-integration:
+    name: PostgreSQL integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PORT: 3001
+      NODE_ENV: test
+      POSTGRES_DB: hakimi_ci
+      POSTGRES_USER: hakimi_ci
+      POSTGRES_PASSWORD: hakimi-ci-local-only
+      DATABASE_URL: postgresql://hakimi_ci:hakimi-ci-local-only@127.0.0.1:5432/hakimi_ci
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: hakimi_ci
+          POSTGRES_USER: hakimi_ci
+          POSTGRES_PASSWORD: hakimi-ci-local-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hakimi_ci -d hakimi_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Report initial migration status
+        run: npm run db:migrate:status
+
+      - name: Apply migrations
+        run: npm run db:migrate
+
+      - name: Verify migration idempotency
+        run: npm run db:migrate
+
+      - name: Report final migration status
+        run: npm run db:migrate:status
+
+      - name: Verify database schema
+        run: npm run db:schema:verify
+
+      - name: Run PostgreSQL integration tests
+        run: npm run test:integration:db
