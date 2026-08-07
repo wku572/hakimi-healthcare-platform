@@ -466,9 +466,10 @@ Validation and normalization rules:
 
 ## Continuous Integration
 
-GitHub Actions runs three stable validation jobs for pull requests, pushes to `main`, and manual workflow dispatches:
+GitHub Actions runs four stable validation jobs for pull requests, pushes to `main`, and manual workflow dispatches:
 
 - `Static quality gates` installs the lockfile with Node.js 24, validates the product baseline, and runs lint, typecheck, unit tests, OpenAPI validation, workspace builds, and formatting checks.
+- `Dependency security` installs the lockfile and audits production dependencies and the complete development-tool dependency graph at the high-severity threshold.
 - `PostgreSQL integration` starts an isolated PostgreSQL 18 service, reports migration status, applies migrations twice to exercise idempotency, verifies that no migrations remain pending, verifies the schema, and runs database integration tests.
 - `Docker validation` validates `compose.yaml` and builds the production image without publishing it.
 
@@ -478,6 +479,8 @@ Before opening a pull request, install exactly from the lockfile and run the sam
 
 ```bash
 npm ci
+npm audit --omit=dev --audit-level=high
+npm audit --audit-level=high
 node scripts/validate-product-baseline.mjs
 npm run lint
 npm run typecheck
@@ -501,9 +504,28 @@ The PostgreSQL checks require Docker with Compose v2 and a healthy local Postgre
 
 Common failure categories include lockfile installation failures, lint or type errors, unit-test regressions, OpenAPI or product-baseline drift, formatting differences, pending or checksum-invalid migrations, schema drift, PostgreSQL integration failures, invalid Compose configuration, and Docker build failures. Fix the underlying failure; do not skip or weaken the corresponding check.
 
+### Dependency Security
+
+`npm audit --omit=dev --audit-level=high` checks packages included in production installs. `npm audit --audit-level=high` also checks development tools such as linters, test runners, build tools, and the Redocly CLI. Moderate findings do not fail these high-severity gates, but they still require review and recorded remediation status.
+
+Redocly validates `apps/api/openapi.yaml` through `npm run api:docs:validate`. A Redocly upgrade must preserve a successful command and must not change the OpenAPI contract merely to silence a new tooling warning. Review and triage warnings separately.
+
+Dependabot checks the root npm workspace and GitHub Actions every Monday. Compatible patch and minor development-dependency updates are grouped; GitHub Actions updates remain individually reviewable. Dependabot never merges automatically: every update must pass all CI jobs and receive human review before merge.
+
+External GitHub Actions are pinned to reviewed, immutable 40-character commit SHAs. The nearby version comment records the release associated with each pin. Verify a replacement SHA against the action's official repository before updating it.
+
+Vulnerability triage:
+
+1. Confirm the advisory, affected version, dependency path, production reachability, and fix availability.
+2. Treat high or critical findings as merge blockers and escalate them to the repository maintainer immediately.
+3. Record moderate findings for timely remediation even though the high-severity audit gate does not fail.
+4. Apply the smallest compatible update, inspect manifest and lockfile movement, and run the complete verification suite.
+5. Never use `npm audit fix --force` or weaken an audit command to obtain a green check.
+
 After these workflows merge, configure branch protection in GitHub repository settings to require:
 
 - `Static quality gates`
+- `Dependency security`
 - `PostgreSQL integration`
 - `Docker validation`
 

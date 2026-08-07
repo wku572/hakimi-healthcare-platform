@@ -44,6 +44,8 @@ npm test
 npm run build
 npm run format
 npm run format:check
+npm audit --omit=dev --audit-level=high
+npm audit --audit-level=high
 node scripts/validate-product-baseline.mjs
 docker compose config
 docker build -t hakimi-healthcare-platform:ci .
@@ -65,15 +67,27 @@ docker build -t hakimi-healthcare-platform:ci .
 - `npm run api:docs:validate` must pass.
 - `npm run build` must succeed for all workspaces.
 - `npm run format:check` must pass.
+- `npm audit --omit=dev --audit-level=high` must report no high or critical production dependency findings.
+- `npm audit --audit-level=high` must report no high or critical findings across runtime and development dependencies.
 - `node scripts/validate-product-baseline.mjs` must pass.
 - `docker build -t hakimi-healthcare-platform:ci .` must build the production image without publishing it.
 
 ## Continuous Integration
 
-- Keep the stable GitHub check names `Static quality gates`, `PostgreSQL integration`, and `Docker validation` aligned with branch-protection settings.
+- Keep the stable GitHub check names `Static quality gates`, `Dependency security`, `PostgreSQL integration`, and `Docker validation` aligned with branch-protection settings.
 - Use Node.js 24 and `npm ci` in CI so installs follow `package-lock.json` exactly.
 - Keep workflow permissions least-privileged and never place production credentials or deployment behavior in validation jobs.
 - Treat CI validation and deployment as separate concerns. Workflow files do not configure GitHub branch protection automatically.
+
+## Supply-Chain Security
+
+- Pin every external GitHub Action to a verified full 40-character commit SHA and keep the reviewed release version in a nearby comment.
+- Keep Dependabot review-only. npm workspace and GitHub Actions updates run weekly; compatible patch and minor development-dependency updates may be grouped, but automatic merging is prohibited.
+- Require CI and human review for every dependency update, including Dependabot pull requests.
+- Treat high and critical audit findings as merge blockers. Triage moderate findings even though the high-severity gate does not fail on them.
+- Record the advisory, affected dependency path, production reachability, fix availability, and remediation status during triage.
+- Preserve successful Redocly/OpenAPI validation, and do not change the API contract solely to silence tooling warnings.
+- Never run `npm audit fix --force` or weaken security checks to obtain a passing result.
 
 ## Change Discipline
 
