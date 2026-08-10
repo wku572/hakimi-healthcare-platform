@@ -1,5 +1,13 @@
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mocked,
+  vi,
+} from 'vitest';
 import {
   createPatientNotFoundError,
   createPatientRegistrationConflictError,
@@ -8,19 +16,13 @@ import { createApp } from '../src/app.js';
 import { createPatientsRouter } from '../src/patients/router.js';
 import type { PatientService } from '../src/patients/service.js';
 
-function createPatientServiceMock(): PatientService & {
-  createPatient: ReturnType<typeof vi.fn>;
-  listPatients: ReturnType<typeof vi.fn>;
-  getPatientById: ReturnType<typeof vi.fn>;
-  updatePatient: ReturnType<typeof vi.fn>;
-  deletePatient: ReturnType<typeof vi.fn>;
-} {
+function createPatientServiceMock(): Mocked<PatientService> {
   return {
-    createPatient: vi.fn(),
-    listPatients: vi.fn(),
-    getPatientById: vi.fn(),
-    updatePatient: vi.fn(),
-    deletePatient: vi.fn(),
+    createPatient: vi.fn<PatientService['createPatient']>(),
+    listPatients: vi.fn<PatientService['listPatients']>(),
+    getPatientById: vi.fn<PatientService['getPatientById']>(),
+    updatePatient: vi.fn<PatientService['updatePatient']>(),
+    deletePatient: vi.fn<PatientService['deletePatient']>(),
   };
 }
 
