@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, type Mocked, vi } from 'vitest';
 import {
   createCodeConflictError,
   createLicenseConflictError,
@@ -9,19 +9,13 @@ import { createApp } from '../src/app.js';
 import { createFacilitiesRouter } from '../src/facilities/router.js';
 import type { HealthcareFacilityService } from '../src/facilities/service.js';
 
-function createFacilityServiceMock(): HealthcareFacilityService & {
-  createFacility: ReturnType<typeof vi.fn>;
-  listFacilities: ReturnType<typeof vi.fn>;
-  getFacilityById: ReturnType<typeof vi.fn>;
-  updateFacility: ReturnType<typeof vi.fn>;
-  deleteFacility: ReturnType<typeof vi.fn>;
-} {
+function createFacilityServiceMock(): Mocked<HealthcareFacilityService> {
   return {
-    createFacility: vi.fn(),
-    listFacilities: vi.fn(),
-    getFacilityById: vi.fn(),
-    updateFacility: vi.fn(),
-    deleteFacility: vi.fn(),
+    createFacility: vi.fn<HealthcareFacilityService['createFacility']>(),
+    listFacilities: vi.fn<HealthcareFacilityService['listFacilities']>(),
+    getFacilityById: vi.fn<HealthcareFacilityService['getFacilityById']>(),
+    updateFacility: vi.fn<HealthcareFacilityService['updateFacility']>(),
+    deleteFacility: vi.fn<HealthcareFacilityService['deleteFacility']>(),
   };
 }
 

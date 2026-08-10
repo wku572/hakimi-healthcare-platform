@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, type Mocked, vi } from 'vitest';
 import {
   createAppointmentConflictError,
   createAppointmentNotFoundError,
@@ -9,19 +9,13 @@ import { createApp } from '../src/app.js';
 import { createAppointmentsRouter } from '../src/appointments/router.js';
 import type { AppointmentService } from '../src/appointments/service.js';
 
-function createAppointmentServiceMock(): AppointmentService & {
-  createAppointment: ReturnType<typeof vi.fn>;
-  listAppointments: ReturnType<typeof vi.fn>;
-  getAppointmentById: ReturnType<typeof vi.fn>;
-  updateAppointment: ReturnType<typeof vi.fn>;
-  cancelAppointment: ReturnType<typeof vi.fn>;
-} {
+function createAppointmentServiceMock(): Mocked<AppointmentService> {
   return {
-    createAppointment: vi.fn(),
-    listAppointments: vi.fn(),
-    getAppointmentById: vi.fn(),
-    updateAppointment: vi.fn(),
-    cancelAppointment: vi.fn(),
+    createAppointment: vi.fn<AppointmentService['createAppointment']>(),
+    listAppointments: vi.fn<AppointmentService['listAppointments']>(),
+    getAppointmentById: vi.fn<AppointmentService['getAppointmentById']>(),
+    updateAppointment: vi.fn<AppointmentService['updateAppointment']>(),
+    cancelAppointment: vi.fn<AppointmentService['cancelAppointment']>(),
   };
 }
 

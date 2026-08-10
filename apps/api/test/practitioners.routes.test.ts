@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, type Mocked, vi } from 'vitest';
 import {
   createAssignmentConflictError,
   createAssignmentNotFoundError,
@@ -13,27 +13,17 @@ import { createApp } from '../src/app.js';
 import { createPractitionersRouter } from '../src/practitioners/router.js';
 import type { PractitionerService } from '../src/practitioners/service.js';
 
-function createPractitionerServiceMock(): PractitionerService & {
-  createPractitioner: ReturnType<typeof vi.fn>;
-  listPractitioners: ReturnType<typeof vi.fn>;
-  getPractitionerById: ReturnType<typeof vi.fn>;
-  updatePractitioner: ReturnType<typeof vi.fn>;
-  deletePractitioner: ReturnType<typeof vi.fn>;
-  createAssignment: ReturnType<typeof vi.fn>;
-  listAssignments: ReturnType<typeof vi.fn>;
-  updateAssignment: ReturnType<typeof vi.fn>;
-  deleteAssignment: ReturnType<typeof vi.fn>;
-} {
+function createPractitionerServiceMock(): Mocked<PractitionerService> {
   return {
-    createPractitioner: vi.fn(),
-    listPractitioners: vi.fn(),
-    getPractitionerById: vi.fn(),
-    updatePractitioner: vi.fn(),
-    deletePractitioner: vi.fn(),
-    createAssignment: vi.fn(),
-    listAssignments: vi.fn(),
-    updateAssignment: vi.fn(),
-    deleteAssignment: vi.fn(),
+    createPractitioner: vi.fn<PractitionerService['createPractitioner']>(),
+    listPractitioners: vi.fn<PractitionerService['listPractitioners']>(),
+    getPractitionerById: vi.fn<PractitionerService['getPractitionerById']>(),
+    updatePractitioner: vi.fn<PractitionerService['updatePractitioner']>(),
+    deletePractitioner: vi.fn<PractitionerService['deletePractitioner']>(),
+    createAssignment: vi.fn<PractitionerService['createAssignment']>(),
+    listAssignments: vi.fn<PractitionerService['listAssignments']>(),
+    updateAssignment: vi.fn<PractitionerService['updateAssignment']>(),
+    deleteAssignment: vi.fn<PractitionerService['deleteAssignment']>(),
   };
 }
 
