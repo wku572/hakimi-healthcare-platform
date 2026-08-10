@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
-    "@redocly/cli": "^2.43.3",
+    "@redocly/cli": "^2.45.0",
     "concurrently": "^9.0.0",
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^7.1.1",
