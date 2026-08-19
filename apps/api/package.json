@@ -17,13 +17,13 @@
   "dependencies": {
     "dotenv": "^17.0.0",
     "express": "^5.0.0",
-    "pg": "^8.0.0",
+    "pg": "^8.23.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^24.13.3",
-    "@types/pg": "^8.0.0",
+    "@types/pg": "^8.21.0",
     "@types/supertest": "^6.0.0",
     "supertest": "^7.0.0",
     "tsx": "^4.23.9",
