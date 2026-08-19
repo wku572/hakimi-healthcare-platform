@@ -6,7 +6,6 @@
     "moduleResolution": "NodeNext",
     "noEmit": true,
     "outDir": "dist",
-    "baseUrl": ".",
     "paths": {
       "@hakimi/shared": ["../../packages/shared/src/index.ts"]
     }
