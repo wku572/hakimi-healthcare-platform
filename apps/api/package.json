@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.2.0",
     "@types/pg": "^8.21.0",
     "@types/supertest": "^7.2.1",
     "supertest": "^7.0.0",
