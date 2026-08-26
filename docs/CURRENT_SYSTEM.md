@@ -32,6 +32,9 @@ This file records the current repository state as an as-built snapshot.
 - Schema verification checks column lengths, nullability, defaults, constraints, and indexes.
 - Public routes use parameterized SQL through repositories and stable JSON errors through centralized middleware.
 - Unexpected errors are sanitized before they reach the client.
+- The API and reminder worker emit vendor-neutral structured JSON events through a closed privacy-safe field allowlist.
+- API responses include an opaque `X-Request-ID`, and request logs use normalized route templates rather than concrete identifiers.
+- Reminder diagnostics contain aggregate cycle counts and no per-reminder identifiers or content.
 
 ## Current Documentation Posture
 

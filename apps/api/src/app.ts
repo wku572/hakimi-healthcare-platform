@@ -1,6 +1,12 @@
 import type { Router } from 'express';
 import express from 'express';
-import { apiErrorHandler } from './http/error-middleware.js';
+import { createApiErrorHandler } from './http/error-middleware.js';
+import { createRequestObservabilityMiddleware } from './http/request-observability.js';
+import {
+  OBSERVABILITY_EVENT_CODES,
+  noopObservabilityLogger,
+  type ObservabilityLogger,
+} from './observability/logger.js';
 
 type HealthResponse = {
   status: 'ok';
@@ -24,6 +30,7 @@ type CreateAppOptions = {
   practitionersRouter?: Router;
   patientsRouter?: Router;
   appointmentsRouter?: Router;
+  logger?: ObservabilityLogger;
 };
 
 const defaultReadinessCheck: ReadinessCheck = async () => false;
@@ -34,8 +41,10 @@ export function createApp(options: CreateAppOptions = {}) {
   const practitionersRouter = options.practitionersRouter;
   const patientsRouter = options.patientsRouter;
   const appointmentsRouter = options.appointmentsRouter;
+  const logger = options.logger ?? noopObservabilityLogger;
   const app = express();
 
+  app.use(createRequestObservabilityMiddleware(logger));
   app.use(express.json({ limit: '100kb' }));
 
   app.get('/health/live', (_request, response) => {
@@ -68,6 +77,11 @@ export function createApp(options: CreateAppOptions = {}) {
       database: 'down',
     };
 
+    const requestId: unknown = response.locals.requestId;
+    logger.warn(OBSERVABILITY_EVENT_CODES.readinessCheckFailed, {
+      ...(typeof requestId === 'string' ? { requestId } : {}),
+      statusCode: 503,
+    });
     response.status(503).json(payload);
   });
 
@@ -87,7 +101,7 @@ export function createApp(options: CreateAppOptions = {}) {
     app.use('/api/v1/appointments', appointmentsRouter);
   }
 
-  app.use(apiErrorHandler);
+  app.use(createApiErrorHandler(logger));
 
   return app;
 }

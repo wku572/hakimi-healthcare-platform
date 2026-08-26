@@ -9,62 +9,90 @@ import { createAppointmentsModule } from './appointments/module.js';
 import { createHealthcareFacilitiesModule } from './facilities/module.js';
 import { createPatientsModule } from './patients/module.js';
 import { createPractitionersModule } from './practitioners/module.js';
+import {
+  createStructuredLogger,
+  OBSERVABILITY_EVENT_CODES,
+} from './observability/logger.js';
+import {
+  createApiShutdownHandler,
+  createApiStartupFailureHandler,
+  logApiStarted,
+} from './observability/api-lifecycle.js';
 
-const env = loadEnvironment();
-const pool = createPostgresPool(env.DATABASE_URL);
-pool.on('error', () => {
-  console.error('PostgreSQL connection error detected.');
-});
-const readinessCheck = createDatabaseReadinessCheck(pool);
-const facilitiesModule = createHealthcareFacilitiesModule(pool);
-const practitionersModule = createPractitionersModule(pool);
-const patientsModule = createPatientsModule(pool);
-const appointmentsModule = createAppointmentsModule(pool);
-const app = createApp({
-  readinessCheck,
-  facilitiesRouter: facilitiesModule.router,
-  practitionersRouter: practitionersModule.router,
-  patientsRouter: patientsModule.router,
-  appointmentsRouter: appointmentsModule.router,
-});
+function main() {
+  const env = loadEnvironment();
+  const logger = createStructuredLogger({
+    service: 'hakimi-api',
+    level: env.LOG_LEVEL,
+  });
+  const pool = createPostgresPool(env.DATABASE_URL);
+  pool.on('error', () => {
+    logger.error(OBSERVABILITY_EVENT_CODES.databasePoolError);
+  });
+  const readinessCheck = createDatabaseReadinessCheck(pool, undefined, logger);
+  const facilitiesModule = createHealthcareFacilitiesModule(pool);
+  const practitionersModule = createPractitionersModule(pool);
+  const patientsModule = createPatientsModule(pool);
+  const appointmentsModule = createAppointmentsModule(pool);
+  const app = createApp({
+    readinessCheck,
+    facilitiesRouter: facilitiesModule.router,
+    practitionersRouter: practitionersModule.router,
+    patientsRouter: patientsModule.router,
+    appointmentsRouter: appointmentsModule.router,
+    logger,
+  });
 
-const server = app.listen(env.PORT, () => {
-  console.log(`Hakimi API listening on http://localhost:${env.PORT}`);
-});
+  const server = app.listen(env.PORT, () => {
+    logApiStarted(logger, env.PORT);
+  });
+  const handleStartupFailure = createApiStartupFailureHandler({
+    logger,
+    closeDatabasePool: () => closePostgresPool(pool),
+    finish(exitCode) {
+      process.exit(exitCode);
+    },
+  });
+  server.once('error', () => {
+    void handleStartupFailure();
+  });
 
-let shuttingDown = false;
+  const shutdown = createApiShutdownHandler({
+    logger,
+    closeHttpServer: () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(new Error('HTTP server close failed'));
+            return;
+          }
 
-async function shutdown(signal: NodeJS.Signals) {
-  if (shuttingDown) {
-    return;
-  }
+          resolve();
+        });
+      }),
+    closeDatabasePool: () => closePostgresPool(pool),
+    finish(exitCode) {
+      process.exit(exitCode || process.exitCode || 0);
+    },
+  });
 
-  shuttingDown = true;
+  process.once('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
 
-  server.close(async (error) => {
-    if (error) {
-      console.error(
-        `Error while closing API server after ${signal}:`,
-        error.message,
-      );
-    }
-
-    try {
-      await closePostgresPool(pool);
-    } catch {
-      console.error(`Failed to close PostgreSQL pool after ${signal}.`);
-      process.exitCode = 1;
-      return;
-    }
-
-    process.exit(process.exitCode ?? 0);
+  process.once('SIGTERM', () => {
+    void shutdown('SIGTERM');
   });
 }
 
-process.once('SIGINT', () => {
-  void shutdown('SIGINT');
-});
-
-process.once('SIGTERM', () => {
-  void shutdown('SIGTERM');
-});
+try {
+  main();
+} catch (error) {
+  void error;
+  const logger = createStructuredLogger({
+    service: 'hakimi-api',
+    level: 'error',
+  });
+  logger.error(OBSERVABILITY_EVENT_CODES.apiStartupFailed);
+  process.exitCode = 1;
+}

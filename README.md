@@ -43,6 +43,7 @@ The API expects:
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 - `DATABASE_URL`
+- `LOG_LEVEL`
 - `REMINDER_WORKER_ID`
 - `REMINDER_POLL_INTERVAL_MS`
 - `REMINDER_BATCH_SIZE`
@@ -116,7 +117,7 @@ Health endpoints:
 
 The Compose health check uses Node's built-in `fetch` from inside the final image, so it does not depend on `curl`.
 
-The API and worker write logs to stdout and stderr through `console`, which keeps container logs simple and privacy-safe.
+The API and worker write newline-delimited structured JSON to stdout and stderr. Every event includes `timestamp`, `severity`, `service`, and `eventCode`; `LOG_LEVEL` remains the environment control for severity filtering. The logging boundary uses stable event codes and a closed field allowlist so runtime diagnostics remain vendor-neutral and privacy-safe.
 
 Graceful shutdown:
 
@@ -128,6 +129,17 @@ Environment configuration:
 - `.env.example` contains placeholders only.
 - The containers expect environment variables to be injected at runtime.
 - If you want local convenience values, create a private `.env` file from `.env.example`.
+- `LOG_LEVEL` accepts `info`, `warn`, or `error` and defaults to `info`.
+
+Runtime observability:
+
+- Every API response includes an opaque `X-Request-ID` for correlation.
+- Valid incoming IDs must be lowercase RFC 4122 UUID v4 values; missing or invalid values are replaced cryptographically.
+- Request logs use normalized route templates and never include query values, headers, bodies, cookies, concrete healthcare identifiers, raw errors, SQL, stack traces, or secrets.
+- Readiness checks emit opaque `POSTGRES_CONNECTIVITY_SUCCEEDED` or `POSTGRES_CONNECTIVITY_FAILED` events without changing their established HTTP responses.
+- An HTTP listener startup failure emits `API_STARTUP_FAILED` once, closes the PostgreSQL pool, and exits with code `1` even if pool cleanup fails.
+- Reminder worker events contain aggregate cycle counts only and never contain reminder content or row-level identifiers.
+- The stable event catalogue and diagnostic procedures are documented in [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md).
 
 PostgreSQL persistence:
 

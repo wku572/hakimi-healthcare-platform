@@ -30,6 +30,7 @@ const workerEnvironmentSchema = z.object({
     .int()
     .min(60_000)
     .default(3_600_000),
+  LOG_LEVEL: z.enum(['info', 'warn', 'error']).default('info'),
 });
 
 export type ReminderWorkerConfig = z.infer<typeof workerEnvironmentSchema>;
