@@ -7,6 +7,7 @@ import {
   processReminderCycle,
   runReminderWorker,
 } from '../src/reminders/worker.js';
+import { createStructuredLogger } from '../src/observability/logger.js';
 
 const appointmentId = '11111111-1111-4111-8111-111111111111';
 const reminderId = '22222222-2222-4222-8222-222222222222';
@@ -111,6 +112,15 @@ describe('reminder worker', () => {
     );
     expect(repository.markReminderCancelled).not.toHaveBeenCalled();
     expect(repository.markReminderDeadLetter).not.toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith('REMINDER_CYCLE_COMPLETED', {
+      claimedCount: 1,
+      deliveredCount: 1,
+      cancelledCount: 0,
+      supersededCount: 0,
+      retriedCount: 0,
+      deadLetteredCount: 0,
+      skippedCount: 0,
+    });
   });
 
   it('cancels reminders when the appointment is cancelled before delivery', async () => {
@@ -354,6 +364,104 @@ describe('reminder worker', () => {
 
     controller.abort();
     await expect(runPromise).resolves.toBeUndefined();
+    expect(logger.info).toHaveBeenCalledWith('REMINDER_WORKER_STARTED');
+    expect(logger.info).toHaveBeenCalledWith('REMINDER_WORKER_STOPPING');
+    expect(logger.info).toHaveBeenCalledWith('REMINDER_WORKER_STOPPED');
+  });
+
+  it('logs cycle failures without raw errors and stops cleanly', async () => {
+    const repository = createRepositoryMock();
+    const adapter = createAdapterMock();
+    const controller = new AbortController();
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(() => controller.abort()),
+    };
+    repository.deadLetterExhaustedReminders.mockRejectedValue(
+      new Error('patient@example.org provider secret'),
+    );
+
+    await runReminderWorker(
+      {
+        repository,
+        adapter,
+        logger,
+        workerId: 'patient@example.org',
+        pollIntervalMs: 1_000,
+        batchSize: 10,
+        leaseMs: 120_000,
+        maxAttempts: 5,
+        backoffBaseMs: 60_000,
+        backoffCapMs: 3_600_000,
+        now: () => new Date('2026-08-07T12:00:00.000Z'),
+      },
+      controller.signal,
+    );
+
+    expect(logger.error).toHaveBeenCalledWith('REMINDER_CYCLE_FAILED');
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain(
+      'patient@example.org',
+    );
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain('secret');
+  });
+
+  it('emits only aggregate cycle fields without reminder-level identifiers', async () => {
+    const repository = createRepositoryMock();
+    const adapter = createAdapterMock();
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const logger = createStructuredLogger({
+      service: 'hakimi-reminder-worker',
+      level: 'info',
+      sink: {
+        stdout: (line) => stdout.push(line),
+        stderr: (line) => stderr.push(line),
+      },
+      now: () => new Date('2026-08-07T12:00:00.000Z'),
+    });
+    repository.deadLetterExhaustedReminders.mockResolvedValue([]);
+    repository.claimDueReminders.mockResolvedValue([createReminderContext()]);
+    repository.findAppointmentReminderProcessingContextById.mockResolvedValue(
+      createReminderContext(),
+    );
+    repository.markReminderDelivered.mockResolvedValue(true);
+    adapter.deliverReminder.mockResolvedValue(undefined);
+
+    await processReminderCycle({
+      repository,
+      adapter,
+      logger,
+      workerId: 'patient@example.org',
+      pollIntervalMs: 1_000,
+      batchSize: 10,
+      leaseMs: 120_000,
+      maxAttempts: 5,
+      backoffBaseMs: 60_000,
+      backoffCapMs: 3_600_000,
+      now: () => new Date('2026-08-07T12:00:00.000Z'),
+    });
+
+    expect(stderr).toEqual([]);
+    expect(stdout).toHaveLength(1);
+    expect(JSON.parse(stdout[0] ?? '{}')).toEqual({
+      timestamp: '2026-08-07T12:00:00.000Z',
+      severity: 'INFO',
+      service: 'hakimi-reminder-worker',
+      eventCode: 'REMINDER_CYCLE_COMPLETED',
+      claimedCount: 1,
+      deliveredCount: 1,
+      cancelledCount: 0,
+      supersededCount: 0,
+      retriedCount: 0,
+      deadLetteredCount: 0,
+      skippedCount: 0,
+    });
+    const output = stdout.join(' ');
+    expect(output).not.toContain(reminderId);
+    expect(output).not.toContain(appointmentId);
+    expect(output).not.toContain(leaseToken);
+    expect(output).not.toContain('patient@example.org');
   });
 });
 

@@ -11,6 +11,7 @@ This directory contains the product baseline package for Hakimi / ሀኪሜ.
 - [DECISIONS.md](./DECISIONS.md) - the recorded decision posture and open architecture/product choices
 - [OPEN_DECISIONS.md](./OPEN_DECISIONS.md) - unresolved stakeholder questions that remain explicitly open
 - [TRACEABILITY.md](./TRACEABILITY.md) - operation-level mapping from API surface to requirements and tests
+- [OPERATIONS_RUNBOOK.md](./OPERATIONS_RUNBOOK.md) - privacy-safe runtime event catalogue and diagnostic procedures
 
 ## Validation
 

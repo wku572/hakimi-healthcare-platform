@@ -19,6 +19,7 @@ const environmentSchema = z.object({
         value.startsWith('postgresql://') || value.startsWith('postgres://'),
       'DATABASE_URL must use the postgres or postgresql scheme',
     ),
+  LOG_LEVEL: z.enum(['info', 'warn', 'error']).default('info'),
 });
 
 export type RuntimeEnvironment = z.infer<typeof environmentSchema>;
