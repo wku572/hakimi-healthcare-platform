@@ -1,13 +1,5 @@
 import request from 'supertest';
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  type Mocked,
-  vi,
-} from 'vitest';
+import { describe, expect, it, type Mocked, vi } from 'vitest';
 import {
   createPatientNotFoundError,
   createPatientRegistrationConflictError,
@@ -15,6 +7,7 @@ import {
 import { createApp } from '../src/app.js';
 import { createPatientsRouter } from '../src/patients/router.js';
 import type { PatientService } from '../src/patients/service.js';
+import type { ObservabilityLogger } from '../src/observability/logger.js';
 
 function createPatientServiceMock(): Mocked<PatientService> {
   return {
@@ -26,41 +19,31 @@ function createPatientServiceMock(): Mocked<PatientService> {
   };
 }
 
-function createTestApp(service = createPatientServiceMock()) {
+function createLoggerMock(): ObservabilityLogger {
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  };
+}
+
+function createTestApp(
+  service = createPatientServiceMock(),
+  logger = createLoggerMock(),
+) {
   return {
     app: createApp({
       patientsRouter: createPatientsRouter(service),
+      logger,
     }),
     service,
+    logger,
   };
 }
 
 describe('api error middleware', () => {
-  const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
-    return undefined;
-  });
-
-  beforeEach(() => {
-    consoleErrorSpy.mockClear();
-  });
-
-  afterEach(() => {
-    expect(consoleErrorSpy.mock.calls.flat().join(' ')).not.toContain(
-      'database exploded',
-    );
-    expect(consoleErrorSpy.mock.calls.flat().join(' ')).not.toContain(
-      'patients_email_not_blank_check',
-    );
-    expect(consoleErrorSpy.mock.calls.flat().join(' ')).not.toContain(
-      'alice@example.org',
-    );
-    expect(consoleErrorSpy.mock.calls.flat().join(' ')).not.toContain(
-      'some other database detail',
-    );
-  });
-
   it('hides ordinary error messages behind a generic 500 response', async () => {
-    const { app, service } = createTestApp();
+    const { app, service, logger } = createTestApp();
     service.getPatientById.mockRejectedValue(new Error('database exploded'));
 
     const response = await request(app).get(
@@ -74,13 +57,21 @@ describe('api error middleware', () => {
         message: 'Internal server error',
       },
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Unexpected API error [opaque]',
+    expect(logger.error).toHaveBeenCalledWith(
+      'HTTP_UNEXPECTED_ERROR',
+      expect.objectContaining({
+        requestId: expect.any(String),
+        errorCode: 'INTERNAL_ERROR',
+        statusCode: 500,
+      }),
+    );
+    expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toContain(
+      'database exploded',
     );
   });
 
   it('hides raw PostgreSQL details from unknown patient path errors', async () => {
-    const { app, service } = createTestApp();
+    const { app, service, logger } = createTestApp();
     service.createPatient.mockRejectedValue({
       code: '23514',
       message:
@@ -107,13 +98,21 @@ describe('api error middleware', () => {
         message: 'Internal server error',
       },
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Unexpected API error [opaque]',
+    expect(logger.error).toHaveBeenCalledWith(
+      'HTTP_UNEXPECTED_ERROR',
+      expect.objectContaining({
+        errorCode: 'INTERNAL_ERROR',
+        statusCode: 500,
+      }),
     );
+    const logArguments = JSON.stringify(vi.mocked(logger.error).mock.calls);
+    expect(logArguments).not.toContain('patients_email_not_blank_check');
+    expect(logArguments).not.toContain('alice@example.org');
+    expect(logArguments).not.toContain('some other database detail');
   });
 
   it('keeps known API errors unchanged', async () => {
-    const { app, service } = createTestApp();
+    const { app, service, logger } = createTestApp();
     service.getPatientById.mockRejectedValue(createPatientNotFoundError());
 
     const response = await request(app).get(
@@ -127,11 +126,18 @@ describe('api error middleware', () => {
         message: 'Patient not found',
       },
     });
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(
+      'HTTP_API_ERROR',
+      expect.objectContaining({
+        errorCode: 'PATIENT_NOT_FOUND',
+        statusCode: 404,
+      }),
+    );
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
   it('keeps the duplicate facility and MRN conflict stable', async () => {
-    const { app, service } = createTestApp();
+    const { app, service, logger } = createTestApp();
     service.createPatient.mockRejectedValue(
       createPatientRegistrationConflictError(),
     );
@@ -150,6 +156,13 @@ describe('api error middleware', () => {
         message: 'Patient registration already exists',
       },
     });
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(
+      'HTTP_API_ERROR',
+      expect.objectContaining({
+        errorCode: 'PATIENT_REGISTRATION_CONFLICT',
+        statusCode: 409,
+      }),
+    );
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });
