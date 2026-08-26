@@ -15,13 +15,16 @@ import {
 } from './service.js';
 import type { AppointmentReminderProcessingContext } from './types.js';
 import { pathToFileURL } from 'node:url';
-
-type ReminderWorkerLogger = Pick<Console, 'info' | 'warn' | 'error'>;
+import {
+  createStructuredLogger,
+  OBSERVABILITY_EVENT_CODES,
+  type ObservabilityLogger,
+} from '../observability/logger.js';
 
 type ReminderWorkerDependencies = {
   repository: ReminderRepository;
   adapter: ReminderDeliveryAdapter;
-  logger: ReminderWorkerLogger;
+  logger: ObservabilityLogger;
   workerId: string;
   pollIntervalMs: number;
   batchSize: number;
@@ -33,9 +36,22 @@ type ReminderWorkerDependencies = {
 };
 
 type ReminderProcessingSummary = {
-  claimed: number;
-  deadLettered: number;
+  claimedCount: number;
+  deliveredCount: number;
+  cancelledCount: number;
+  supersededCount: number;
+  retriedCount: number;
+  deadLetteredCount: number;
+  skippedCount: number;
 };
+
+type ReminderProcessingOutcome =
+  | 'delivered'
+  | 'cancelled'
+  | 'superseded'
+  | 'retried'
+  | 'deadLettered'
+  | 'skipped';
 
 function sleep(ms: number, signal?: AbortSignal) {
   return new Promise<void>((resolve) => {
@@ -64,13 +80,12 @@ function getErrorCategory(error: unknown): ReminderDeliveryErrorCategory {
 async function processClaimedReminder(
   repository: ReminderRepository,
   adapter: ReminderDeliveryAdapter,
-  logger: ReminderWorkerLogger,
   config: Pick<
     ReminderWorkerDependencies,
     'workerId' | 'backoffBaseMs' | 'backoffCapMs' | 'maxAttempts' | 'now'
   >,
   reminder: AppointmentReminderProcessingContext,
-): Promise<void> {
+): Promise<ReminderProcessingOutcome> {
   const latest = await repository.findAppointmentReminderProcessingContextById(
     reminder.id,
   );
@@ -80,10 +95,7 @@ async function processClaimedReminder(
     latest.status !== 'PROCESSING' ||
     latest.leaseToken !== reminder.leaseToken
   ) {
-    logger.warn(
-      `Reminder skipped before delivery [opaque] reminderId=${reminder.id} appointmentId=${reminder.appointmentId} workerId=${config.workerId} state=lease_mismatch`,
-    );
-    return;
+    return 'skipped';
   }
 
   if (latest.appointmentStatus !== 'CONFIRMED') {
@@ -100,10 +112,7 @@ async function processClaimedReminder(
         category,
       );
 
-      logger.warn(
-        `Reminder skipped before delivery [opaque] reminderId=${latest.id} appointmentId=${latest.appointmentId} workerId=${config.workerId} state=${category}`,
-      );
-      return;
+      return 'cancelled';
     }
 
     await repository.markReminderDeadLetter(
@@ -112,10 +121,7 @@ async function processClaimedReminder(
       category,
     );
 
-    logger.warn(
-      `Reminder skipped before delivery [opaque] reminderId=${latest.id} appointmentId=${latest.appointmentId} workerId=${config.workerId} state=${category}`,
-    );
-    return;
+    return 'deadLettered';
   }
 
   if (latest.appointmentScheduleVersion !== latest.scheduleVersion) {
@@ -124,10 +130,7 @@ async function processClaimedReminder(
       latest.appointmentScheduleVersion,
     );
 
-    logger.warn(
-      `Reminder skipped before delivery [opaque] reminderId=${latest.id} appointmentId=${latest.appointmentId} workerId=${config.workerId} state=stale_schedule_version`,
-    );
-    return;
+    return 'superseded';
   }
 
   if (latest.appointmentIsStarted) {
@@ -137,10 +140,7 @@ async function processClaimedReminder(
       'appointment_started',
     );
 
-    logger.warn(
-      `Reminder skipped before delivery [opaque] reminderId=${latest.id} appointmentId=${latest.appointmentId} workerId=${config.workerId} state=appointment_started`,
-    );
-    return;
+    return 'deadLettered';
   }
 
   try {
@@ -155,15 +155,10 @@ async function processClaimedReminder(
     );
 
     if (!delivered) {
-      logger.warn(
-        `Reminder delivery finalization skipped [opaque] reminderId=${latest.id} appointmentId=${latest.appointmentId} workerId=${config.workerId} state=lease_mismatch`,
-      );
-      return;
+      return 'skipped';
     }
 
-    logger.info(
-      `Reminder delivery completed [opaque] reminderId=${latest.id} appointmentId=${latest.appointmentId} workerId=${config.workerId} attemptCount=${latest.attemptCount}`,
-    );
+    return 'delivered';
   } catch (error) {
     const category = getErrorCategory(error);
     const attemptCount = latest.attemptCount;
@@ -191,10 +186,7 @@ async function processClaimedReminder(
         category,
       );
 
-      logger.warn(
-        `Reminder dead-lettered [opaque] reminderId=${latest.id} appointmentId=${latest.appointmentId} workerId=${config.workerId} state=${category} attemptCount=${latest.attemptCount}`,
-      );
-      return;
+      return 'deadLettered';
     }
 
     const retried = await repository.markReminderRetry(
@@ -205,15 +197,10 @@ async function processClaimedReminder(
     );
 
     if (!retried) {
-      logger.warn(
-        `Reminder retry skipped [opaque] reminderId=${latest.id} appointmentId=${latest.appointmentId} workerId=${config.workerId} state=lease_mismatch`,
-      );
-      return;
+      return 'skipped';
     }
 
-    logger.warn(
-      `Reminder retry scheduled [opaque] reminderId=${latest.id} appointmentId=${latest.appointmentId} workerId=${config.workerId} attemptCount=${latest.attemptCount} nextAvailableAt=${nextAvailableAt.toISOString()} state=${category}`,
-    );
+    return 'retried';
   }
 }
 
@@ -229,21 +216,51 @@ export async function processReminderCycle(
     now: now.toISOString(),
     leaseUntil: new Date(now.getTime() + dependencies.leaseMs).toISOString(),
   });
+  const summary: ReminderProcessingSummary = {
+    claimedCount: claimed.length,
+    deliveredCount: 0,
+    cancelledCount: 0,
+    supersededCount: 0,
+    retriedCount: 0,
+    deadLetteredCount: deadLettered.length,
+    skippedCount: 0,
+  };
 
   for (const reminder of claimed) {
-    await processClaimedReminder(
+    const outcome = await processClaimedReminder(
       dependencies.repository,
       dependencies.adapter,
-      dependencies.logger,
       dependencies,
       reminder,
     );
+
+    switch (outcome) {
+      case 'delivered':
+        summary.deliveredCount += 1;
+        break;
+      case 'cancelled':
+        summary.cancelledCount += 1;
+        break;
+      case 'superseded':
+        summary.supersededCount += 1;
+        break;
+      case 'retried':
+        summary.retriedCount += 1;
+        break;
+      case 'deadLettered':
+        summary.deadLetteredCount += 1;
+        break;
+      case 'skipped':
+        summary.skippedCount += 1;
+        break;
+    }
   }
 
-  return {
-    claimed: claimed.length,
-    deadLettered: deadLettered.length,
-  };
+  dependencies.logger.info(
+    OBSERVABILITY_EVENT_CODES.reminderCycleCompleted,
+    summary,
+  );
+  return summary;
 }
 
 export async function runReminderWorker(
@@ -251,39 +268,56 @@ export async function runReminderWorker(
   signal?: AbortSignal,
 ): Promise<void> {
   let running = true;
+  let stoppingLogged = false;
 
   const stop = () => {
     running = false;
+    if (!stoppingLogged) {
+      stoppingLogged = true;
+      dependencies.logger.info(
+        OBSERVABILITY_EVENT_CODES.reminderWorkerStopping,
+      );
+    }
   };
 
   signal?.addEventListener('abort', stop, { once: true });
+  dependencies.logger.info(OBSERVABILITY_EVENT_CODES.reminderWorkerStarted);
 
-  while (running) {
-    try {
-      await processReminderCycle(dependencies);
-    } catch (error) {
-      void error;
-      dependencies.logger.error(
-        `Reminder worker cycle failed [opaque] workerId=${dependencies.workerId}`,
-      );
+  try {
+    while (running) {
+      try {
+        await processReminderCycle(dependencies);
+      } catch (error) {
+        void error;
+        dependencies.logger.error(
+          OBSERVABILITY_EVENT_CODES.reminderCycleFailed,
+        );
+      }
+
+      if (!running || signal?.aborted) {
+        break;
+      }
+
+      await sleep(dependencies.pollIntervalMs, signal);
     }
-
-    if (!running || signal?.aborted) {
-      break;
-    }
-
-    await sleep(dependencies.pollIntervalMs, signal);
+  } finally {
+    signal?.removeEventListener('abort', stop);
+    dependencies.logger.info(OBSERVABILITY_EVENT_CODES.reminderWorkerStopped);
   }
 }
 
 async function main() {
   const config = loadReminderWorkerConfig();
+  const logger = createStructuredLogger({
+    service: 'hakimi-reminder-worker',
+    level: config.LOG_LEVEL,
+  });
   const pool = createPostgresPool(config.DATABASE_URL);
   pool.on('error', () => {
-    console.error('PostgreSQL connection error detected.');
+    logger.error(OBSERVABILITY_EVENT_CODES.databasePoolError);
   });
   const repository = createReminderRepository(pool);
-  const adapter = createDevelopmentReminderDeliveryAdapter(console);
+  const adapter = createDevelopmentReminderDeliveryAdapter();
   const abortController = new AbortController();
 
   const stop = () => {
@@ -298,7 +332,7 @@ async function main() {
       {
         repository,
         adapter,
-        logger: console,
+        logger,
         workerId: config.REMINDER_WORKER_ID,
         pollIntervalMs: config.REMINDER_POLL_INTERVAL_MS,
         batchSize: config.REMINDER_BATCH_SIZE,
@@ -324,7 +358,11 @@ const isMainModule =
 if (isMainModule) {
   void main().catch((error: unknown) => {
     void error;
-    console.error('Reminder worker failed [opaque]');
+    const logger = createStructuredLogger({
+      service: 'hakimi-reminder-worker',
+      level: 'error',
+    });
+    logger.error(OBSERVABILITY_EVENT_CODES.reminderWorkerFailed);
     process.exitCode = 1;
   });
 }

@@ -30,11 +30,13 @@ describe('environment loaders', () => {
       POSTGRES_PASSWORD: 'change-me',
       DATABASE_URL:
         'postgresql://hakimi_prod:change-me@postgres:5432/hakimi_prod',
+      LOG_LEVEL: 'info',
     });
     expect(workerConfig.DATABASE_URL).toBe(
       'postgresql://hakimi_prod:change-me@postgres:5432/hakimi_prod',
     );
     expect(workerConfig.REMINDER_WORKER_ID).toBe('reminder-worker-prod');
+    expect(workerConfig.LOG_LEVEL).toBe('info');
   });
 
   it('prefers injected variables over .env values', () => {
@@ -68,6 +70,7 @@ describe('environment loaders', () => {
       POSTGRES_PASSWORD: 'change-me',
       DATABASE_URL:
         'postgresql://hakimi_prod:change-me@postgres:5432/hakimi_prod',
+      LOG_LEVEL: 'info',
     });
     expect(workerConfig.REMINDER_WORKER_ID).toBe('reminder-worker-prod');
   });
@@ -102,6 +105,26 @@ describe('environment loaders', () => {
           ...injectedEnvironment,
           REMINDER_WORKER_ID: 'reminder-worker-prod',
           REMINDER_POLL_INTERVAL_MS: 'not-a-number',
+        },
+        {},
+      ),
+    ).toThrow(/Invalid reminder worker configuration/i);
+
+    expect(() =>
+      loadEnvironment(
+        {
+          ...injectedEnvironment,
+          LOG_LEVEL: 'debug',
+        },
+        {},
+      ),
+    ).toThrow(/Invalid environment configuration/i);
+    expect(() =>
+      loadReminderWorkerConfig(
+        {
+          ...injectedEnvironment,
+          REMINDER_WORKER_ID: 'reminder-worker-prod',
+          LOG_LEVEL: 'debug',
         },
         {},
       ),
