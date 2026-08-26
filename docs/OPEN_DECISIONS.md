@@ -1,6 +1,6 @@
 # Open Decisions
 
-These are the unresolved stakeholder questions that remain deliberately open.
+This file records unresolved stakeholder questions and the deferred remainder of decisions approved with revisions.
 
 ## Open Items
 
@@ -12,16 +12,16 @@ These are the unresolved stakeholder questions that remain deliberately open.
    - Question: What notice, consent, purpose-limitation, and patient privacy policy should the platform enforce?
 3. User roles
    - Related canonical records: [OPEN-03](./REQUIREMENTS.md)
-   - Proposed resolution: Adopt the six human roles, four service actors, privilege boundaries, and facility-scoping model in [ACCESS_CONTROL_BASELINE.md](./ACCESS_CONTROL_BASELINE.md).
-   - Approval still required: Product owner must approve, revise, or reject role names, multi-role behavior, role-assignment authority, and facility membership rules independently from authentication and authorization.
+   - Recorded outcome: [APPROVED WITH REVISIONS](./ACCESS_CONTROL_BASELINE.md#recorded-approval) for the workforce-only Sprint 15 role catalogue and facility scope.
+   - Deferred remainder: Identity-role assignment administration is excluded, and `PATIENT` role activation remains blocked pending `OPEN-08`.
 4. Authentication
    - Related canonical records: [OPEN-04](./REQUIREMENTS.md)
-   - Proposed resolution: Use OIDC Authorization Code with PKCE for humans, unique workload identities for services, 10-minute access tokens, rotated refresh tokens, an 8-hour maximum workforce session, 30-minute workforce inactivity timeout, explicit revocation, and privacy-safe recovery.
-   - Approval still required: Product owner and security stakeholders must approve or revise the mechanism, durations, workforce MFA, patient MFA and recovery factors, activation/deactivation behavior, and identity-provider selection criteria.
+   - Recorded outcome: [APPROVED WITH REVISIONS](./ACCESS_CONTROL_BASELINE.md#recorded-approval) for OIDC Authorization Code with PKCE, workforce MFA, short-lived access tokens, revocation, and unique workload identities.
+   - Deferred remainder: Patient authentication, patient MFA, patient account recovery, and patient session lifecycle remain blocked pending `OPEN-02`, `OPEN-07`, `OPEN-08`, and `OPEN-10`.
 5. Authorization and patient-data access
    - Related canonical records: [OPEN-05](./REQUIREMENTS.md)
-   - Proposed resolution: Use default-deny authorization from immutable server-derived context and the complete 26-operation role, facility, patient, field, and denial matrix in [TRACEABILITY.md](./TRACEABILITY.md).
-   - Approval still required: Product, clinical, privacy, and security stakeholders must approve or revise directory visibility, staff patient-data boundaries, practitioner relationships, patient self-service, field privileges, controlled cross-facility access, and `401`/`403`/privacy-preserving `404` behavior.
+   - Recorded outcome: [APPROVED WITH REVISIONS](./ACCESS_CONTROL_BASELINE.md#recorded-approval) for default-deny workforce authorization, immutable server-derived context, facility isolation, and privacy-preserving denial in the 26-operation matrix.
+   - Deferred remainder: Patient self-service, cross-facility patient writes, global patient deactivation, and patient-derived authorization context remain blocked pending `OPEN-02`, `OPEN-07`, `OPEN-08`, and `OPEN-10`.
 6. Audit requirements
    - Related canonical records: [OPEN-06](./REQUIREMENTS.md)
    - Question: What audit events, retention, and review rules are required?
@@ -61,4 +61,6 @@ The Sprint 14 proposal does not resolve:
 - [OPEN-07](./REQUIREMENTS.md): retention, hard deletion, or global patient deactivation;
 - [OPEN-10](./REQUIREMENTS.md): applicable legal, regulatory, healthcare, or data-protection obligations.
 
-These remain independent stakeholder decisions even if `OPEN-03`, `OPEN-04`, or `OPEN-05` is later approved.
+These remain independent stakeholder decisions after the bounded workforce approvals for `OPEN-03`, `OPEN-04`, and `OPEN-05`.
+
+The approval permits synthetic-data-only Sprint 15 implementation and testing, not production deployment or real patient-data processing. Production activation remains blocked pending `OPEN-02`, `OPEN-10`, `OPEN-12`, and applicable review. `OPEN-06`, `OPEN-07`, and `OPEN-08` remain unresolved for audit, retention, and patient identity. The minimum authoritative access-state persistence and migration boundary must be specified before runtime coding but is not selected by this documentation change.
