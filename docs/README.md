@@ -12,6 +12,7 @@ This directory contains the product baseline package for Hakimi / ሀኪሜ.
 - [OPEN_DECISIONS.md](./OPEN_DECISIONS.md) - unresolved stakeholder questions that remain explicitly open
 - [TRACEABILITY.md](./TRACEABILITY.md) - operation-level mapping from API surface to requirements and tests
 - [ACCESS_CONTROL_BASELINE.md](./ACCESS_CONTROL_BASELINE.md) - accountable approved-with-revisions workforce identity and access-control baseline, authoritative-state constraints, and production gate
+- [SPRINT_15_IMPLEMENTATION_SPEC.md](./SPRINT_15_IMPLEMENTATION_SPEC.md) - proposed workforce persistence, OIDC resource-server, provisioning, authorization, and synthetic-test implementation boundary
 - [OPERATIONS_RUNBOOK.md](./OPERATIONS_RUNBOOK.md) - privacy-safe runtime event catalogue and diagnostic procedures
 
 ## Validation

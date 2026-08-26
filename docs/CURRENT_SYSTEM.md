@@ -36,7 +36,7 @@ This file records the current repository state as an as-built snapshot.
 - API responses include an opaque `X-Request-ID`, and request logs use normalized route templates rather than concrete identifiers.
 - Reminder diagnostics contain aggregate cycle counts and no per-reminder identifiers or content.
 - Authentication and authorization remain absent from runtime behavior and OpenAPI. The [recorded approval](./ACCESS_CONTROL_BASELINE.md#recorded-approval) plans a bounded workforce identity and access-control baseline for Sprint 15; it does not authorize production or real patient-data processing, and patient-facing capabilities remain blocked.
-- No authoritative actor, workforce-role, facility-scope, activation, revocation, or session persistence model has been selected. The Sprint 15 implementation specification must define its minimum persistence and migration boundary before runtime coding.
+- No authoritative actor, workforce-role, facility-scope, activation, revocation, or session persistence is implemented. A proposed [Sprint 15 implementation specification](./SPRINT_15_IMPLEMENTATION_SPEC.md) defines a reviewable minimum persistence and migration boundary; runtime coding remains blocked until that specification is approved and merged.
 
 ## Current Documentation Posture
 
@@ -44,3 +44,4 @@ This file records the current repository state as an as-built snapshot.
 - [TRACEABILITY.md](./TRACEABILITY.md) maps every public API operation to requirements and tests.
 - [DECISIONS.md](./DECISIONS.md) and [OPEN_DECISIONS.md](./OPEN_DECISIONS.md) keep unresolved policy questions visible.
 - [ACCESS_CONTROL_BASELINE.md](./ACCESS_CONTROL_BASELINE.md) records the accountable approval for `OPEN-03`, `OPEN-04`, and `OPEN-05`, their blocked patient-facing remainder, the synthetic-data-only boundary, and the bounded Sprint 15 constraints.
+- [SPRINT_15_IMPLEMENTATION_SPEC.md](./SPRINT_15_IMPLEMENTATION_SPEC.md) is the proposed documentation-only persistence, OIDC resource-server, provisioning, authorization, and synthetic-test specification; it is not runtime behavior.

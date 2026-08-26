@@ -8,6 +8,7 @@ This document records the current decision posture that follows from the canonic
 - [DEC-01](./REQUIREMENTS.md) is a proposed identity-resolution architecture candidate. It has no independent policy authority and depends on the stakeholder decision in [OPEN-08](./REQUIREMENTS.md).
 - [DEC-02](./REQUIREMENTS.md) is a proposed appointment-policy enforcement architecture candidate. It has no independent policy authority and depends on the stakeholder decision in [OPEN-09](./REQUIREMENTS.md).
 - [OPEN-03](./REQUIREMENTS.md), [OPEN-04](./REQUIREMENTS.md), and [OPEN-05](./REQUIREMENTS.md) are **APPROVED WITH REVISIONS** and `PLANNED` under the [recorded approval](./ACCESS_CONTROL_BASELINE.md#recorded-approval) for a bounded workforce-only Sprint 15. Runtime implementation has not begun.
+- The [Sprint 15 implementation specification](./SPRINT_15_IMPLEMENTATION_SPEC.md) is `PROPOSED FOR REVIEW`. It is subordinate to the recorded approval and does not authorize runtime coding, production deployment, or real patient-data processing.
 - Patient-role activation, patient authentication, patient MFA, patient recovery, patient self-service, cross-facility patient writes, global patient deactivation, and identity-role assignment administration remain blocked.
 - [OPEN-01](./REQUIREMENTS.md), [OPEN-02](./REQUIREMENTS.md), and [OPEN-06](./REQUIREMENTS.md) through [OPEN-12](./REQUIREMENTS.md) retain unresolved scope outside the approved workforce baseline.
 
