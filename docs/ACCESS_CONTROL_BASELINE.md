@@ -1,54 +1,80 @@
-# Proposed Identity And Access-Control Baseline
+# Approved Workforce Identity And Access-Control Baseline
 
 ## Status And Authority
 
-This document is the Sprint 14 proposal for resolving [OPEN-03](./REQUIREMENTS.md), [OPEN-04](./REQUIREMENTS.md), and [OPEN-05](./REQUIREMENTS.md). It is **PROPOSED** and pending product-owner approval. Nothing in this document is `CONFIRMED`, and the current runtime remains unauthenticated and unauthorized.
+This document records the product-owner outcomes for [OPEN-03](./REQUIREMENTS.md), [OPEN-04](./REQUIREMENTS.md), and [OPEN-05](./REQUIREMENTS.md). Each decision is **APPROVED WITH REVISIONS** for a bounded workforce-only Sprint 15 and is recorded as `PLANNED` in the canonical register. The patient-facing remainder stays blocked, and the current runtime remains unauthenticated and unauthorized.
 
-The three proposals are separately reviewable:
+## Recorded Approval
 
-| Authority record | Proposed resolution                                                                                                                                                                                               | Approval state                                                                 |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `OPEN-03`        | Adopt the human and service actor catalogue, role vocabulary, privilege boundaries, and facility-scoping model below.                                                                                             | OPEN DECISION; pending product-owner approval                                  |
-| `OPEN-04`        | Use standards-based federated authentication for humans, workload identities for services, short-lived credentials, explicit revocation, and privacy-safe recovery.                                               | OPEN DECISION; pending product-owner and security approval                     |
-| `OPEN-05`        | Enforce default-deny authorization from immutable server-derived context, with facility isolation, self-access boundaries, relationship checks, field-level restrictions, and privacy-preserving denial behavior. | OPEN DECISION; pending product-owner, clinical, privacy, and security approval |
+| Approval field                  | Recorded value                                                                                                                   |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Decision                        | `APPROVED WITH REVISIONS`                                                                                                        |
+| Canonical implementation status | `PLANNED`                                                                                                                        |
+| Authorized product owner        | Habte Selasie                                                                                                                    |
+| Organizational role/title       | Repository Owner and Product Decision Authority                                                                                  |
+| Decision date                   | 2026-08-26                                                                                                                       |
+| Evidence reference              | [GitHub issue #36](https://github.com/wku572/hakimi-healthcare-platform/issues/36)                                               |
+| Approved boundary               | Workforce-only Sprint 15 design, implementation, and testing with synthetic data                                                 |
+| Blocked boundary                | Patient-facing identity and self-service, production deployment, and processing of real patient data pending the decisions below |
 
-Approval of one proposal does not automatically approve either of the others. Sprint 15 must not implement authentication or authorization until all three records have an explicit recorded outcome and any unresolved dependency that blocks an operation is addressed.
+The evidence reference is the accountable authority for the approved-with-revisions outcome. It does not promote runtime authentication or authorization to `IMPLEMENTED` and does not authorize production use.
 
-## Proposed Role Resolution For OPEN-03
+The three outcomes remain independently governed:
+
+| Authority record | Approved workforce baseline                                                                                                                                             | Revision and blocked remainder                                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPEN-03`        | Workforce actor catalogue, role vocabulary, privilege boundaries, and facility scope.                                                                                   | Role-assignment administration is excluded. `PATIENT` role activation remains blocked pending `OPEN-08`.                                                    |
+| `OPEN-04`        | OIDC Authorization Code with PKCE, workforce MFA, short-lived access tokens, revocation, and unique workload identities.                                                | Patient authentication, patient MFA, and patient account recovery remain blocked pending `OPEN-02`, `OPEN-07`, `OPEN-08`, and `OPEN-10`.                    |
+| `OPEN-05`        | Default-deny workforce authorization from immutable server-derived context, facility isolation, same-facility workforce access, and privacy-preserving denial behavior. | Patient self-service, cross-facility patient writes, and global patient deactivation remain blocked pending `OPEN-02`, `OPEN-07`, `OPEN-08`, and `OPEN-10`. |
+
+These approvals authorize only the workforce scope marked `APPROVED FOR SPRINT 15` in the operation matrix. They do not authorize any blocked patient-facing capability or infer privacy, retention, identity, or legal policy.
+
+## Approved Workforce Role Resolution For OPEN-03
 
 ### Human Actors And Roles
 
-One person may hold multiple roles. Workforce roles are assigned independently for each facility unless a role is explicitly platform-wide. Role assignment is not inherited merely because a person appears in a practitioner, patient, or facility record.
+One person may hold multiple workforce roles. Workforce roles are scoped independently for each facility unless a role is explicitly platform-wide. Role authority is not inherited merely because a person appears in a practitioner, patient, or facility record.
 
-| Role                  | Scope                                      | Proposed privileges                                                                                                                                                       | Explicit boundary                                                                                                                 |
-| --------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `PLATFORM_ADMIN`      | Platform-wide                              | Create and deactivate facilities; manage global practitioner master records; perform non-clinical platform administration.                                                | No routine patient or appointment access. It is not a break-glass clinical role.                                                  |
-| `FACILITY_ADMIN`      | One or more explicitly assigned facilities | Manage the assigned facility profile, facility roster and assignments, patient registration administration, and appointments for the assigned facility.                   | Cannot act for an unassigned facility or modify platform-wide identity policy.                                                    |
-| `SCHEDULER`           | One or more explicitly assigned facilities | Register patients, read the minimum demographics needed for scheduling, and create, view, reschedule, or cancel appointments within the assigned facility.                | Cannot manage facilities, practitioner master records, role assignments, or global patient lifecycle.                             |
-| `PRACTITIONER`        | Active practitioner assignments            | Read their own profile and assignments; view their appointments and patients connected through an in-scope appointment; perform only approved appointment-status changes. | Cannot browse unrelated patients, act after assignment deactivation, or reschedule unless separately authorized.                  |
-| `PATIENT`             | One linked patient identity                | Read and update approved fields on their own patient record; view, create, and cancel their own appointments at registered facilities.                                    | Cannot select another patient identifier or gain facility scope from request input. Staff-assisted registration remains separate. |
-| `OPERATIONS_OPERATOR` | Runtime operations                         | Observe liveness/readiness and operate approved runtime infrastructure outside the domain API.                                                                            | No facility, practitioner, patient, appointment, or reminder-content access through this role.                                    |
+| Role                  | Sprint 15 scope                            | Approved workforce privileges                                                                                                                                             | Explicit boundary                                                                                                                  |
+| --------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `PLATFORM_ADMIN`      | Platform-wide                              | Create and deactivate facilities; manage global practitioner master records; perform non-clinical platform administration.                                                | No routine patient or appointment access. It is not a break-glass clinical role.                                                   |
+| `FACILITY_ADMIN`      | One or more explicitly assigned facilities | Manage the assigned facility profile, facility roster and assignments, patient registration administration, and appointments for the assigned facility.                   | Cannot act for an unassigned facility or modify platform-wide identity policy.                                                     |
+| `SCHEDULER`           | One or more explicitly assigned facilities | Register patients, read the minimum demographics needed for scheduling, and create, view, reschedule, or cancel appointments within the assigned facility.                | Cannot manage facilities, practitioner master records, role assignments, or global patient lifecycle.                              |
+| `PRACTITIONER`        | Active practitioner assignments            | Read their own profile and assignments; view their appointments and patients connected through an in-scope appointment; perform only approved appointment-status changes. | Cannot browse unrelated patients, act after assignment deactivation, or reschedule unless separately authorized.                   |
+| `PATIENT`             | Deferred; inactive in Sprint 15            | None. The role remains a catalogue placeholder only.                                                                                                                      | Activation, authentication, MFA, recovery, and self-service remain blocked pending `OPEN-02`, `OPEN-07`, `OPEN-08`, and `OPEN-10`. |
+| `OPERATIONS_OPERATOR` | Runtime operations                         | Observe liveness/readiness and operate approved runtime infrastructure outside the domain API.                                                                            | No facility, practitioner, patient, appointment, or reminder-content access through this role.                                     |
 
-The proposed role catalogue does not establish employment, licensure, clinical responsibility, consent, or legal authority. Those questions remain outside Sprint 14.
+Role-assignment administration is excluded from Sprint 15. No public API, user interface, or product workflow may create, update, or remove identity-role assignments until that workflow is separately defined and approved. Existing practitioner-facility assignment operations manage healthcare rosters; they do not grant authentication roles.
+
+### Authoritative Access State
+
+- Sprint 15 requires an authoritative server-side source for subject-to-actor mapping, current workforce roles, facility scopes, actor activation state, and revocation state.
+- Initial workforce assignments must be provisioned through a controlled out-of-band process while role-assignment administration APIs and user interfaces remain excluded.
+- Practitioner-facility roster operations manage healthcare relationships only and must never create or modify authentication roles.
+- Access-token claims may identify a subject and session, but they must not create or modify mutable workforce roles, facility scopes, activation state, or revocation state.
+- Before runtime coding begins, the Sprint 15 implementation specification must define the minimum persistence model and migration boundary required for authoritative access state and sessions.
+- This approval-recording change neither selects nor implements that persistence model.
+
+The approved workforce catalogue does not establish employment, licensure, clinical responsibility, consent, or legal authority.
 
 ### Service Actors
 
-| Service actor        | Proposed access                                                                                             | Boundary                                                                                             |
+| Service actor        | Approved access                                                                                             | Boundary                                                                                             |
 | -------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `HEALTH_PROBE`       | Call public liveness and readiness endpoints.                                                               | Receives only the existing health payloads and no domain data.                                       |
 | `REMINDER_WORKER`    | Use a dedicated workload and database identity for the existing reminder processing path.                   | No public HTTP-domain privileges; aggregate diagnostics only; no reminder content in logs.           |
 | `MIGRATION_OPERATOR` | Run the existing migration and schema-verification commands with a separately controlled database identity. | Not an application user and not available to normal runtime requests.                                |
 | `API_RUNTIME`        | Connect to PostgreSQL and execute only application operations required by the API.                          | Does not grant caller privileges; every human request still requires its own authorization decision. |
 
-Shared service credentials, human use of service identities, and service use of human sessions are prohibited by the proposal.
+Shared service credentials, human use of service identities, and service use of human sessions are prohibited by the approved workforce baseline.
 
 ### Privilege Model
 
-The proposed model combines coarse role-based privileges with server-evaluated attributes:
+The approved workforce model combines coarse role-based privileges with server-evaluated attributes:
 
 - Role answers which operation category an actor may attempt.
 - Facility membership or active practitioner assignment answers where the actor may operate.
-- Patient self-link or an in-scope care/scheduling relationship answers whose patient data may be accessed.
+- An in-scope care or scheduling relationship answers whose patient data a workforce actor may access.
 - Request-field rules answer which fields the actor may change through a shared `PATCH` operation.
 - Resource state answers whether inactive actors, assignments, facilities, or sessions must be denied.
 
@@ -58,15 +84,15 @@ Possession of a valid credential is never sufficient authorization. Every operat
 
 After credential validation, Sprint 15 should construct one authorization context for the request and treat it as immutable:
 
-| Context field     | Source                                                   | Rule                                                                        |
-| ----------------- | -------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `actorId`         | Server-side actor mapping for the authenticated subject  | Never accepted from body, query, or route parameters.                       |
-| `actorType`       | Server-side actor or workload record                     | Limited to approved human and service actor types.                          |
-| `sessionId`       | Validated authentication session                         | Used only as an opaque security identifier and never logged raw.            |
-| `roleAssignments` | Current server-side role assignments                     | Re-evaluated on each request or from a bounded, revocation-aware cache.     |
-| `facilityScopes`  | Active facility memberships and practitioner assignments | Request-supplied facility IDs can narrow scope but never create it.         |
-| `patientId`       | Approved server-side patient-to-account link             | A request-supplied patient ID must match this link for self-service access. |
-| `serviceScopes`   | Approved workload registration                           | Human roles cannot be inferred from service scopes.                         |
+| Context field     | Source                                                   | Rule                                                                             |
+| ----------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `actorId`         | Server-side actor mapping for the authenticated subject  | Never accepted from body, query, or route parameters.                            |
+| `actorType`       | Server-side actor or workload record                     | Limited to approved human and service actor types.                               |
+| `sessionId`       | Validated authentication session                         | Used only as an opaque security identifier and never logged raw.                 |
+| `roleAssignments` | Current server-side role assignments                     | Re-evaluated on each request or from a bounded, revocation-aware cache.          |
+| `facilityScopes`  | Active facility memberships and practitioner assignments | Request-supplied facility IDs can narrow scope but never create it.              |
+| `patientId`       | Deferred server-side patient-to-account link             | Not populated or accepted in Sprint 15 while patient-role activation is blocked. |
+| `serviceScopes`   | Approved workload registration                           | Human roles cannot be inferred from service scopes.                              |
 
 Tokens may identify the subject and session, but token claims alone must not be authoritative for mutable roles, facility memberships, account activation, practitioner assignments, or patient links.
 
@@ -76,26 +102,26 @@ Tokens may identify the subject and session, but token claims alone must not be 
 - Collection queries must add mandatory scope predicates before pagination and counting; request filters cannot broaden them.
 - Resource-by-ID operations must resolve scope in the same parameterized query used to retrieve the resource where practical.
 - A practitioner may have multiple active assignments, but each patient or appointment decision must match an active assignment at the resource facility.
-- A patient may access their own records across approved registrations, but the patient-to-account link must be server controlled.
+- Patient self-service and patient-derived facility scope are blocked in Sprint 15.
 - `PLATFORM_ADMIN` may cross facility boundaries only for non-patient platform administration described in the matrix.
 - No routine human role receives unrestricted cross-facility patient access.
 - Break-glass access is not proposed. It remains blocked until privacy, audit, legal, retention, and accountable-ownership decisions are approved.
 
 ### Patient-Data Boundaries
 
-| Actor                 | Proposed patient-data boundary                                                                                                            |
+| Actor                 | Approved or blocked patient-data boundary                                                                                                 |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `FACILITY_ADMIN`      | Minimum patient registration and appointment data for patients registered at an assigned facility.                                        |
 | `SCHEDULER`           | Minimum demographics and appointment data required for registration and scheduling at an assigned facility.                               |
 | `PRACTITIONER`        | Patient and appointment data only when an active assignment and appointment relationship connect the practitioner, patient, and facility. |
-| `PATIENT`             | The server-linked patient record and that patient's registrations and appointments only.                                                  |
+| `PATIENT`             | Blocked. No patient account link, credential, or self-service access is active in Sprint 15.                                              |
 | `PLATFORM_ADMIN`      | No routine patient or appointment access.                                                                                                 |
 | `OPERATIONS_OPERATOR` | No patient or appointment access.                                                                                                         |
 | Service actors        | Only the minimum database records required for the service's existing task; no human browsing capability.                                 |
 
-Staff updates to a patient shared across facilities remain constrained by [OPEN-08](./REQUIREMENTS.md). Until that policy is approved, the proposal denies a facility-scoped staff update when more than one active facility registration could make write ownership ambiguous. Global patient deactivation remains policy-blocked by `OPEN-07` and `OPEN-08`.
+Same-facility workforce access is approved only for the minimum registration and scheduling purpose represented by the current operations. Staff updates to a patient shared across facilities remain blocked by [OPEN-08](./REQUIREMENTS.md), and global patient deactivation remains blocked by `OPEN-07` and `OPEN-08`.
 
-## Proposed Authentication Resolution For OPEN-04
+## Approved Workforce Authentication Resolution For OPEN-04
 
 ### Human Authentication Mechanism
 
@@ -107,9 +133,11 @@ Staff updates to a patient shared across facilities remain constrained by [OPEN-
 - Rotate refresh tokens after every use and revoke the token family when replay is detected.
 - Use a maximum interactive session lifetime of 8 hours and a 30-minute inactivity timeout for workforce roles.
 - Require multi-factor authentication for `PLATFORM_ADMIN`, `FACILITY_ADMIN`, `SCHEDULER`, `PRACTITIONER`, and `OPERATIONS_OPERATOR` sessions.
-- Patient MFA and account-recovery factors remain a product-owner and accessibility choice within `OPEN-04`; Sprint 15 must not invent them.
+- Patient authentication and patient MFA are not part of Sprint 15.
+- Workforce credential and factor recovery remains delegated to the identity provider; Hakimi does not add a recovery API or user interface in Sprint 15.
+- Patient account recovery is not part of Sprint 15 and must not be invented as an implementation side effect.
 
-The identity-provider product and hosting model are not selected by this proposal. Selection must preserve the protocol and lifecycle requirements above without introducing provider-specific authorization logic into domain services.
+The identity-provider product and hosting model are not selected by this baseline. Selection must preserve the protocol and lifecycle requirements above without introducing provider-specific authorization logic into domain services.
 
 ### Service Authentication Mechanism
 
@@ -120,29 +148,29 @@ The identity-provider product and hosting model are not selected by this proposa
 
 ### Lifecycle
 
-| Lifecycle event | Proposed behavior                                                                                                                                                                                                             |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Activation      | An account remains denied until its subject mapping is active and at least one approved role or patient link is assigned.                                                                                                     |
-| Deactivation    | Set the local actor inactive, revoke active sessions, and deny subsequent requests even if an unexpired token remains. Deactivating a practitioner or patient domain record does not automatically define account policy.     |
-| Revocation      | Revoke the session and refresh-token family; privileged role removal and facility-membership removal take effect on the next authorization evaluation.                                                                        |
-| Expiration      | Reject expired access tokens with the generic authentication error and require reauthentication when the session has expired.                                                                                                 |
-| Recovery        | Delegate credential proof and factor reset to the identity provider; responses must not reveal whether an account exists. Privileged recovery requires a separately authorized administrative process and MFA reset controls. |
-| Replay          | Reject reused refresh tokens, revoke the affected token family, and require reauthentication. Audit-event content and retention remain governed by `OPEN-06`.                                                                 |
+| Lifecycle event | Approved workforce behavior or blocked boundary                                                                                                                                                                                           |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Activation      | A workforce account remains denied until its subject mapping is active and at least one approved workforce role and scope is provisioned outside the excluded role-administration workflow. Patient activation is blocked.                |
+| Deactivation    | Set the local actor inactive, revoke active sessions, and deny subsequent requests even if an unexpired token remains. Deactivating a practitioner or patient domain record does not automatically define account policy.                 |
+| Revocation      | Revoke the session and refresh-token family; privileged role removal and facility-membership removal take effect on the next authorization evaluation.                                                                                    |
+| Expiration      | Reject expired access tokens with the generic authentication error and require reauthentication when the session has expired.                                                                                                             |
+| Recovery        | Workforce credential and factor recovery is delegated to the identity provider with generic responses, separately authorized administration, and MFA reset controls. Hakimi adds no recovery API or UI. Patient recovery remains blocked. |
+| Replay          | Reject reused refresh tokens, revoke the affected token family, and require reauthentication. Audit-event content and retention remain governed by `OPEN-06`.                                                                             |
 
-## Proposed Authorization Resolution For OPEN-05
+## Approved Workforce Authorization Resolution For OPEN-05
 
 ### Default Deny
 
 - Only the two health operations are explicitly public.
 - Every domain operation requires a validated human identity and an explicit matrix grant.
-- Service actors have no public domain-operation grant in Sprint 14.
+- Service actors have no public domain-operation grant in Sprint 15.
 - Missing matrix rows, unknown roles, inactive actors, inactive role assignments, ambiguous scope, and unavailable authorization context are denied.
 - Authorization is enforced before domain services perform state-changing work or return protected data.
 - Field-level authorization is required where a shared `PATCH` operation serves roles with different privileges.
 
 ### Denial Behavior
 
-| Condition                                                                                                                | Proposed HTTP behavior                                                                                  | Information boundary                                                                                   |
+| Condition                                                                                                                | Approved HTTP behavior                                                                                  | Information boundary                                                                                   |
 | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Missing, invalid, expired, or revoked authentication                                                                     | `401` with a stable generic authentication envelope and standards-compliant challenge where applicable. | Do not distinguish missing accounts, inactive accounts, revoked sessions, or token-validation details. |
 | Authenticated actor lacks an operation or field privilege on an otherwise in-scope resource                              | `403` with a stable generic forbidden envelope.                                                         | Do not expose required roles or internal policy expressions.                                           |
@@ -154,32 +182,32 @@ Sprint 15 may add stable `401` and `403` codes only through an explicit API-cont
 
 ## Threat Model
 
-| Threat                | Proposed mitigation                                                                                                                               | Remaining dependency                                              |
+| Threat                | Approved workforce mitigation or blocked boundary                                                                                                 | Remaining dependency                                              |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | IDOR                  | Server-derived resource scope; scoped repository queries; privacy-preserving `404`; negative cross-facility tests.                                | Patient identity and shared-record ownership remain in `OPEN-08`. |
 | Enumeration           | Generic authentication/recovery responses; identical absent/out-of-scope `404`; filtered collections; rate-limit design before public deployment. | Privacy policy remains in `OPEN-02`.                              |
 | Replay                | Short-lived access tokens; one-time refresh-token rotation; token-family revocation on reuse; issuer time validation.                             | Audit-event requirements remain in `OPEN-06`.                     |
 | Token theft           | TLS-only deployment; no token logging; short lifetimes; secure client storage; revocation; workforce MFA.                                         | Deployment target and secret ownership remain in `OPEN-12`.       |
 | Credential leakage    | External credential verification; secret injection; no credentials in source, images, examples, logs, or errors; independent workload identities. | Applicable obligations remain in `OPEN-10`.                       |
-| Privilege escalation  | Default deny; server-side roles; no client-controlled scope; field-level checks; explicit role-assignment privilege; negative tests.              | Role approval remains in `OPEN-03`.                               |
+| Privilege escalation  | Default deny; server-side roles; no client-controlled scope; field-level checks; explicit role-assignment privilege; negative tests.              | Role-assignment administration is excluded by `OPEN-03`.          |
 | Cross-facility access | Mandatory facility predicates; active membership checks; relationship-aware retrieval; no unrestricted patient superuser.                         | Multi-facility patient policy remains in `OPEN-08`.               |
 | Inactive accounts     | Check local actor and relevant role/assignment state during every authorization evaluation; revoke sessions on deactivation.                      | Retention and deletion remain in `OPEN-07`.                       |
 
 Rate limits, security-event persistence, alerting, evidence retention, and incident-response ownership are not defined here because they depend on unresolved audit, deployment, privacy, and legal policy.
 
-## Unresolved Product-Owner Choices
+## Deferred And Blocked Decisions
 
-The product owner must separately approve, reject, or revise:
+The following revisions remain outside the approved workforce baseline:
 
-- `OPEN-03`: the six human roles, whether one person may hold multiple facility roles, and who can assign or remove roles;
-- `OPEN-04`: federated OIDC, the token and session durations, workforce MFA, patient MFA and recovery factors, and the identity-provider selection criteria;
-- `OPEN-05`: public-versus-authenticated directory access, staff patient-data boundaries, practitioner relationship rules, patient self-service operations, field-level privileges, and denial behavior;
+- `OPEN-03`: identity-role assignment administration and `PATIENT` role activation;
+- `OPEN-04`: patient authentication, patient MFA, patient account recovery, and any patient session lifecycle;
+- `OPEN-05`: patient self-service, cross-facility patient writes, global patient deactivation, and any patient-derived authorization context;
 - `OPEN-08`: patient account linking, multi-facility write ownership, duplicate handling, and identity merge policy;
 - `OPEN-09`: appointment transition and cancellation rules that constrain role permissions;
 - `OPEN-11`: reminder channel identity and delivery policy;
 - `OPEN-12`: identity-provider hosting, secret ownership, runtime ownership, and operational accountability.
 
-The following records remain explicitly unresolved and are not inferred by this proposal:
+The following records remain explicitly unresolved and are not inferred by this baseline:
 
 - [OPEN-01](./REQUIREMENTS.md): broader healthcare and business workflow rules;
 - [OPEN-02](./REQUIREMENTS.md): privacy, consent, notice, and purpose limitation;
@@ -187,35 +215,53 @@ The following records remain explicitly unresolved and are not inferred by this 
 - [OPEN-07](./REQUIREMENTS.md): retention, hard deletion, and global patient deactivation;
 - [OPEN-10](./REQUIREMENTS.md): applicable jurisdictions, healthcare regulation, and data-protection law.
 
+## Approved Use And Production Gate
+
+- The recorded approval authorizes bounded Sprint 15 design, implementation, and testing with synthetic data only.
+- It does not authorize production deployment or processing of real patient data.
+- Production activation remains blocked pending [OPEN-02](./REQUIREMENTS.md), [OPEN-10](./REQUIREMENTS.md), [OPEN-12](./REQUIREMENTS.md), and applicable privacy, legal, security, and operational review.
+- [OPEN-06](./REQUIREMENTS.md) and [OPEN-07](./REQUIREMENTS.md) remain unresolved for audit requirements, retention, and deletion.
+- [OPEN-08](./REQUIREMENTS.md) remains unresolved for patient identity, account linking, multi-facility ownership, duplicate handling, and merge policy.
+- Sprint 15 must not implement patient authentication, patient MFA, patient recovery, patient sessions, patient self-service, patient-derived authorization context, cross-facility patient writes, or global patient deactivation.
+
 ## Sprint 15 Implementation Constraints
 
-If the three Sprint 14 proposals are approved, Sprint 15 must:
+The approved bounded workforce baseline authorizes Sprint 15 to:
 
 - preserve the current health payloads, domain success payloads, request IDs, and privacy-safe logging boundary;
 - update OpenAPI before or with any new `401` and `403` runtime responses;
 - introduce one centralized authentication boundary before protected routes and centralized authorization helpers before domain service execution;
 - keep resource-scope enforcement in parameterized repository queries rather than filtering protected rows in memory;
 - construct immutable authorization context only from validated credentials and current server-side state;
+- define the minimum actor, workforce-role, facility-scope, activation, revocation, and session persistence and migration boundary in the Sprint 15 implementation specification before runtime coding begins;
+- provision initial workforce assignments through a controlled out-of-band process until role-assignment administration is separately defined and approved;
 - reject client attempts to supply actor, role, facility-membership, or patient-link authority;
 - enforce field-level privileges for shared update operations;
 - use dedicated service identities and never reuse human credentials;
 - add route, service, and PostgreSQL integration tests for every permitted and denied role/scope path;
 - include concurrency and revocation tests where stale authorization state could grant access;
 - preserve sanitized errors and exclude credentials, claims, tokens, role assignments, patient identifiers, and policy internals from logs;
-- avoid changing patient identity, appointment, reminder, retention, privacy, legal, or audit policy as a side effect of implementation.
+- avoid changing patient identity, appointment, reminder, retention, privacy, legal, recovery, or audit policy as a side effect of implementation;
+- keep the `PATIENT` role inactive and exclude patient credentials, sessions, MFA, recovery, and self-service;
+- exclude public role-assignment administration APIs, user interfaces, and workflows;
+- deny cross-facility patient writes and global patient deactivation;
+- use synthetic data only for Sprint 15 implementation and testing; do not deploy to production or process real patient data under this approval.
 
 ## Explicit Exclusions
 
-- No runtime authentication or authorization implementation in Sprint 14.
-- No user, credential, session, role, membership, or audit database schema.
+- No patient authentication, patient MFA, patient recovery, or patient self-service in Sprint 15.
+- No Hakimi-hosted account-recovery API or user interface; patient account recovery remains blocked.
+- No identity-role assignment administration API, user interface, or product workflow.
+- This approval-recording change introduces no database schema. The bounded Sprint 15 specification must define any minimum actor, workforce-role, facility-scope, activation, revocation, or session persistence required for implementation. Clinical-audit persistence remains blocked by `OPEN-06`.
 - No identity-provider vendor selection or hosted-service configuration.
 - No login, registration, recovery, consent, or role-administration UI.
 - No break-glass workflow.
 - No clinical audit log or retention schedule.
 - No inferred legal, regulatory, privacy, or consent policy.
+- No production deployment or processing of real patient data.
 - No modification to reminder timing, content, channels, retries, or delivery adapter.
 - No deployment, Docker, Compose, CI, migration, OpenAPI, dependency, or API behavior change.
 
 ## Operation-Level Coverage
 
-The proposed authorization treatment for every current public operation is recorded once in the [Sprint 14 authorization matrix](./TRACEABILITY.md). The independently derived baseline contains 26 OpenAPI operations and the same 26 Express operations, with no contract-only, implementation-only, duplicate, or missing operation.
+The approved workforce authorization treatment for every current public operation is recorded once in the [Sprint 15 authorization matrix](./TRACEABILITY.md). The independently derived baseline contains 26 OpenAPI operations and the same 26 Express operations, with no contract-only, implementation-only, duplicate, or missing operation. Every row is explicitly marked approved or blocked.

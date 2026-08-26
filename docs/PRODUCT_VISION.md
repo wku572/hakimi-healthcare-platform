@@ -14,7 +14,7 @@ This vision remains **PROPOSED**. It is the product direction the repository is 
 
 ## Scope Boundaries
 
-- No authentication or authorization baseline is confirmed yet.
+- A workforce-only authentication and authorization baseline has a [recorded approval](./ACCESS_CONTROL_BASELINE.md#recorded-approval) for synthetic-data design, implementation, and testing; production use, real patient-data processing, patient authentication, and patient self-service remain blocked.
 - No clinical record system is defined in the current baseline.
 - No payment, claims, or insurance workflow is included.
 - No recurring appointment engine is included.
