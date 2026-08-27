@@ -6,6 +6,10 @@ import {
 } from 'express';
 import type { HealthcareFacilityService } from './service.js';
 import {
+  denyRouteAuthorizer,
+  type RouteAuthorizer,
+} from '../access/service.js';
+import {
   parseCreateHealthcareFacilityInput,
   parseFacilityIdParam,
   parseHealthcareFacilityListQuery,
@@ -24,13 +28,17 @@ function wrapAsync(handler: AsyncHandler) {
   };
 }
 
-export function createFacilitiesRouter(service: HealthcareFacilityService) {
+export function createFacilitiesRouter(
+  service: HealthcareFacilityService,
+  authorizer: RouteAuthorizer = denyRouteAuthorizer,
+) {
   const router = Router();
 
   router.post(
     '/',
     wrapAsync(async (request, response) => {
       const input = parseCreateHealthcareFacilityInput(request.body);
+      await authorizer.authorize(response, 'createHealthcareFacility', input);
       const facility = await service.createFacility(input);
 
       response
@@ -44,7 +52,14 @@ export function createFacilitiesRouter(service: HealthcareFacilityService) {
     '/',
     wrapAsync(async (request, response) => {
       const query = parseHealthcareFacilityListQuery(request.query);
-      const facilities = await service.listFacilities(query);
+      const authorization = await authorizer.authorize(
+        response,
+        'listHealthcareFacilities',
+      );
+      const facilities = await service.listFacilities(
+        query,
+        authorization.scope,
+      );
 
       response.status(200).json(facilities);
     }),
@@ -54,6 +69,14 @@ export function createFacilitiesRouter(service: HealthcareFacilityService) {
     '/:id',
     wrapAsync(async (request, response) => {
       const { id } = parseFacilityIdParam(request.params);
+      await authorizer.authorize(
+        response,
+        'getHealthcareFacilityById',
+        undefined,
+        {
+          facilityId: id,
+        },
+      );
       const facility = await service.getFacilityById(id);
 
       response.status(200).json(facility);
@@ -65,7 +88,14 @@ export function createFacilitiesRouter(service: HealthcareFacilityService) {
     wrapAsync(async (request, response) => {
       const { id } = parseFacilityIdParam(request.params);
       const input = parseUpdateHealthcareFacilityInput(request.body);
+      await authorizer.authorize(response, 'updateHealthcareFacility', input, {
+        facilityId: id,
+      });
       const facility = await service.updateFacility(id, input);
+
+      if (input.isActive !== undefined) {
+        await authorizer.revokeForFacility(id);
+      }
 
       response.status(200).json(facility);
     }),
@@ -75,7 +105,14 @@ export function createFacilitiesRouter(service: HealthcareFacilityService) {
     '/:id',
     wrapAsync(async (request, response) => {
       const { id } = parseFacilityIdParam(request.params);
+      await authorizer.authorize(
+        response,
+        'deactivateHealthcareFacility',
+        undefined,
+        { facilityId: id },
+      );
       await service.deleteFacility(id);
+      await authorizer.revokeForFacility(id);
 
       response.status(204).send();
     }),

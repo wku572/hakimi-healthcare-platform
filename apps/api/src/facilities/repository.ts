@@ -6,6 +6,7 @@ import type {
   UpdateHealthcareFacilityInput,
   FacilityType,
 } from '@hakimi/shared';
+import type { DomainAuthorizationScope } from '../access/types.js';
 import {
   createCodeConflictError,
   createLicenseConflictError,
@@ -125,9 +126,48 @@ function escapeLikePattern(value: string) {
   return value.replace(/[\\%_]/g, '\\$&');
 }
 
-function buildFacilityFilterSql(query: HealthcareFacilityListQuery) {
+function buildFacilityFilterSql(
+  query: HealthcareFacilityListQuery,
+  scope?: DomainAuthorizationScope,
+) {
   const clauses: string[] = [];
   const values: unknown[] = [];
+
+  if (scope && !scope.isPlatformAdmin) {
+    values.push(scope.actorId);
+    const actorParameter = `$${values.length}`;
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM workforce_actors scoped_actor
+      WHERE scoped_actor.id = ${actorParameter}
+        AND scoped_actor.is_active = true
+        AND (
+          EXISTS (
+            SELECT 1
+            FROM workforce_role_assignments scoped_role
+            WHERE scoped_role.actor_id = scoped_actor.id
+              AND scoped_role.is_active = true
+              AND scoped_role.role IN ('FACILITY_ADMIN', 'SCHEDULER')
+              AND scoped_role.facility_id = healthcare_facilities.id
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM workforce_role_assignments practitioner_role
+            JOIN practitioners linked_practitioner
+              ON linked_practitioner.id = scoped_actor.practitioner_id
+             AND linked_practitioner.is_active = true
+            JOIN practitioner_facility_assignments scoped_assignment
+              ON scoped_assignment.practitioner_id = linked_practitioner.id
+             AND scoped_assignment.is_active = true
+             AND scoped_assignment.facility_id = healthcare_facilities.id
+            WHERE practitioner_role.actor_id = scoped_actor.id
+              AND practitioner_role.role = 'PRACTITIONER'
+              AND practitioner_role.is_active = true
+          )
+        )
+    )`);
+    clauses.push('is_active = true');
+  }
 
   if (query.facilityType) {
     values.push(query.facilityType);
@@ -168,6 +208,7 @@ export type HealthcareFacilityRepository = {
   create(input: CreateHealthcareFacilityInput): Promise<HealthcareFacility>;
   list(
     query: HealthcareFacilityListQuery,
+    scope?: DomainAuthorizationScope,
   ): Promise<HealthcareFacilityListResponse>;
   findById(id: string): Promise<HealthcareFacility | null>;
   update(
@@ -226,8 +267,8 @@ export function createHealthcareFacilityRepository(
       }
     },
 
-    async list(query) {
-      const { whereSql, values } = buildFacilityFilterSql(query);
+    async list(query, scope) {
+      const { whereSql, values } = buildFacilityFilterSql(query, scope);
       const countResult = await db.query<{ total_items: number }>(
         `
           SELECT COUNT(*)::int AS total_items
@@ -306,14 +347,67 @@ export function createHealthcareFacilityRepository(
         )
         .join(', ');
       values.push(id);
+      const changesLifecycle = input.isActive !== undefined;
 
       try {
         const result = await db.query<FacilityRow>(
           `
-            UPDATE healthcare_facilities
-            SET ${setSql}, updated_at = now()
-            WHERE id = $${values.length}
-            RETURNING ${FACILITY_SELECT_COLUMNS}
+            WITH previous_facility AS MATERIALIZED (
+              SELECT id, is_active
+              FROM healthcare_facilities
+              WHERE id = $${values.length}
+              FOR UPDATE
+            ),
+            updated_facility AS MATERIALIZED (
+              UPDATE healthcare_facilities facility
+              SET ${setSql}, updated_at = now()
+              FROM previous_facility previous
+              WHERE facility.id = previous.id
+              RETURNING
+                facility.id,
+                facility.code,
+                facility.name,
+                facility.facility_type,
+                facility.license_number,
+                facility.phone,
+                facility.email,
+                facility.region,
+                facility.city,
+                facility.address_line,
+                facility.is_active,
+                facility.created_at,
+                facility.updated_at,
+                previous.is_active AS previous_is_active
+            ),
+            authority_epoch AS (
+              UPDATE workforce_role_assignments role
+              SET activated_at = now(),
+                  updated_at = now()
+              FROM updated_facility facility
+              WHERE ${changesLifecycle ? 'true' : 'false'}
+                AND facility.is_active IS DISTINCT FROM facility.previous_is_active
+                AND role.is_active = true
+                AND (
+                  role.facility_id = facility.id
+                  OR (
+                    role.role = 'PRACTITIONER'
+                    AND role.facility_id IS NULL
+                    AND EXISTS (
+                      SELECT 1
+                      FROM workforce_actors actor
+                      JOIN practitioner_facility_assignments assignment
+                        ON assignment.practitioner_id = actor.practitioner_id
+                       AND assignment.facility_id = facility.id
+                       AND assignment.is_active = true
+                      WHERE actor.id = role.actor_id
+                    )
+                  )
+                )
+              RETURNING role.id
+            )
+            SELECT ${FACILITY_SELECT_COLUMNS},
+                   (SELECT COUNT(*) FROM authority_epoch) AS authority_epoch_count
+            FROM updated_facility
           `,
           values,
         );
@@ -329,11 +423,50 @@ export function createHealthcareFacilityRepository(
     async deactivate(id) {
       const result = await db.query<{ id: string }>(
         `
-          UPDATE healthcare_facilities
-          SET is_active = false,
-              updated_at = now()
-          WHERE id = $1
-          RETURNING id
+          WITH previous_facility AS MATERIALIZED (
+            SELECT id, is_active
+            FROM healthcare_facilities
+            WHERE id = $1
+            FOR UPDATE
+          ),
+          updated_facility AS MATERIALIZED (
+            UPDATE healthcare_facilities facility
+            SET is_active = false,
+                updated_at = now()
+            FROM previous_facility previous
+            WHERE facility.id = previous.id
+            RETURNING facility.id,
+                      facility.is_active,
+                      previous.is_active AS previous_is_active
+          ),
+          authority_epoch AS (
+            UPDATE workforce_role_assignments role
+            SET activated_at = now(),
+                updated_at = now()
+            FROM updated_facility facility
+            WHERE facility.is_active IS DISTINCT FROM facility.previous_is_active
+              AND role.is_active = true
+              AND (
+                role.facility_id = facility.id
+                OR (
+                  role.role = 'PRACTITIONER'
+                  AND role.facility_id IS NULL
+                  AND EXISTS (
+                    SELECT 1
+                    FROM workforce_actors actor
+                    JOIN practitioner_facility_assignments assignment
+                      ON assignment.practitioner_id = actor.practitioner_id
+                     AND assignment.facility_id = facility.id
+                     AND assignment.is_active = true
+                    WHERE actor.id = role.actor_id
+                  )
+                )
+              )
+            RETURNING role.id
+          )
+          SELECT id,
+                 (SELECT COUNT(*) FROM authority_epoch) AS authority_epoch_count
+          FROM updated_facility
         `,
         [id],
       );

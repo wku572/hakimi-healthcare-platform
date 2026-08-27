@@ -7,6 +7,11 @@ import {
 } from '../src/http/api-error.js';
 import { createApp } from '../src/app.js';
 import { createAppointmentsRouter } from '../src/appointments/router.js';
+import {
+  allowAllAccessMiddleware,
+  allowAllRouteAuthorizer,
+  allowAllScope,
+} from './helpers/access.js';
 import type { AppointmentService } from '../src/appointments/service.js';
 
 function createAppointmentServiceMock(): Mocked<AppointmentService> {
@@ -22,7 +27,11 @@ function createAppointmentServiceMock(): Mocked<AppointmentService> {
 function createTestApp(service = createAppointmentServiceMock()) {
   return {
     app: createApp({
-      appointmentsRouter: createAppointmentsRouter(service),
+      appointmentsRouter: createAppointmentsRouter(
+        service,
+        allowAllRouteAuthorizer,
+      ),
+      accessAuthenticationMiddleware: allowAllAccessMiddleware,
     }),
     service,
   };
@@ -153,16 +162,19 @@ describe('appointment routes', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(appointmentListResponse);
-    expect(service.listAppointments).toHaveBeenCalledWith({
-      page: 1,
-      pageSize: 20,
-      facilityId: appointment.facilityId,
-      practitionerId: appointment.practitionerId,
-      patientId: appointment.patientId,
-      status: 'CONFIRMED',
-      from: '2026-08-07T09:00:00+03:00',
-      to: '2026-08-07T10:00:00+03:00',
-    });
+    expect(service.listAppointments).toHaveBeenCalledWith(
+      {
+        page: 1,
+        pageSize: 20,
+        facilityId: appointment.facilityId,
+        practitionerId: appointment.practitionerId,
+        patientId: appointment.patientId,
+        status: 'CONFIRMED',
+        from: '2026-08-07T09:00:00+03:00',
+        to: '2026-08-07T10:00:00+03:00',
+      },
+      allowAllScope,
+    );
   });
 
   it('returns an appointment by id', async () => {

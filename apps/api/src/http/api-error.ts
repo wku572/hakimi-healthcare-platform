@@ -38,6 +38,18 @@ export function createInvalidJsonError() {
   return new ApiError(400, 'INVALID_JSON', 'Invalid JSON request body');
 }
 
+export function createAuthenticationRequiredError() {
+  return new ApiError(
+    401,
+    'AUTHENTICATION_REQUIRED',
+    'Authentication required',
+  );
+}
+
+export function createForbiddenError() {
+  return new ApiError(403, 'FORBIDDEN', 'Forbidden');
+}
+
 export function createNotFoundError(message = 'Facility not found') {
   return new ApiError(404, 'FACILITY_NOT_FOUND', message);
 }

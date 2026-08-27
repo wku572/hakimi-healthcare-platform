@@ -21,7 +21,7 @@ This file records unresolved stakeholder questions and the deferred remainder of
 5. Authorization and patient-data access
    - Related canonical records: [OPEN-05](./REQUIREMENTS.md)
    - Recorded outcome: [APPROVED WITH REVISIONS](./ACCESS_CONTROL_BASELINE.md#recorded-approval) for default-deny workforce authorization, immutable server-derived context, facility isolation, and privacy-preserving denial in the 26-operation matrix.
-   - Deferred remainder: Patient self-service, cross-facility patient writes, global patient deactivation, and patient-derived authorization context remain blocked pending `OPEN-02`, `OPEN-07`, `OPEN-08`, and `OPEN-10`.
+   - Deferred remainder: Patient self-service, cross-facility patient writes, global patient deactivation, and patient-derived authorization context remain blocked pending `OPEN-02`, `OPEN-07`, `OPEN-08`, and `OPEN-10`; practitioner access to standalone patient records remains blocked pending `OPEN-09`.
 6. Audit requirements
    - Related canonical records: [OPEN-06](./REQUIREMENTS.md)
    - Question: What audit events, retention, and review rules are required?
@@ -63,4 +63,4 @@ The Sprint 14 proposal does not resolve:
 
 These remain independent stakeholder decisions after the bounded workforce approvals for `OPEN-03`, `OPEN-04`, and `OPEN-05`.
 
-The approval permits synthetic-data-only Sprint 15 implementation and testing, not production deployment or real patient-data processing. Production activation remains blocked pending `OPEN-02`, `OPEN-10`, `OPEN-12`, and applicable review. `OPEN-06`, `OPEN-07`, and `OPEN-08` remain unresolved for audit, retention, and patient identity. The minimum authoritative access-state persistence and migration boundary must be specified before runtime coding but is not selected by this documentation change.
+The approval permits synthetic-data-only Sprint 15 implementation and testing, not production deployment or real patient-data processing. Production activation remains blocked pending `OPEN-02`, `OPEN-10`, `OPEN-12`, and applicable review. `OPEN-06`, `OPEN-07`, and `OPEN-08` remain unresolved for audit, retention, and patient identity. Sprint 15 implements the approved minimum authoritative access-state persistence boundary without resolving those deferred policies.

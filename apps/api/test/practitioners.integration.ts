@@ -10,6 +10,10 @@ import { loadEnvironment } from '../src/env.js';
 import { createHealthcareFacilitiesModule } from '../src/facilities/module.js';
 import { createPractitionersModule } from '../src/practitioners/module.js';
 import { runMigrationCommand } from '../src/migrations/runner.js';
+import {
+  allowAllAccessMiddleware,
+  allowAllRouteAuthorizer,
+} from './helpers/access.js';
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('test:integration:db refuses to run in production.');
@@ -39,12 +43,19 @@ describe.sequential('PostgreSQL practitioner integration', () => {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
   const readinessCheck = createDatabaseReadinessCheck(pool);
-  const facilitiesModule = createHealthcareFacilitiesModule(pool);
-  const practitionersModule = createPractitionersModule(pool);
+  const facilitiesModule = createHealthcareFacilitiesModule(
+    pool,
+    allowAllRouteAuthorizer,
+  );
+  const practitionersModule = createPractitionersModule(
+    pool,
+    allowAllRouteAuthorizer,
+  );
   const app = createApp({
     readinessCheck,
     facilitiesRouter: facilitiesModule.router,
     practitionersRouter: practitionersModule.router,
+    accessAuthenticationMiddleware: allowAllAccessMiddleware,
   });
 
   beforeAll(async () => {

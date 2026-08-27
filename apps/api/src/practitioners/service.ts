@@ -9,6 +9,7 @@ import type {
   UpdatePractitionerAssignmentInput,
   UpdatePractitionerInput,
 } from '@hakimi/shared';
+import type { DomainAuthorizationScope } from '../access/types.js';
 import {
   createAssignmentNotFoundError,
   createFacilityNotFoundError,
@@ -22,6 +23,7 @@ export type PractitionerService = {
   createPractitioner(input: CreatePractitionerInput): Promise<Practitioner>;
   listPractitioners(
     query: PractitionerListQuery,
+    scope?: DomainAuthorizationScope,
   ): Promise<PractitionerListResponse>;
   getPractitionerById(id: string): Promise<Practitioner>;
   updatePractitioner(
@@ -35,6 +37,7 @@ export type PractitionerService = {
   ): Promise<PractitionerFacilityAssignment>;
   listAssignments(
     practitionerId: string,
+    scope?: DomainAuthorizationScope,
   ): Promise<PractitionerAssignmentListResponse>;
   updateAssignment(
     practitionerId: string,
@@ -216,8 +219,8 @@ export function createPractitionerService(
       return repository.createPractitioner(normalizeCreateInput(input));
     },
 
-    async listPractitioners(query) {
-      return repository.listPractitioners(query);
+    async listPractitioners(query, scope) {
+      return repository.listPractitioners(query, scope);
     },
 
     async getPractitionerById(id) {
@@ -285,9 +288,9 @@ export function createPractitionerService(
       });
     },
 
-    async listAssignments(practitionerId) {
+    async listAssignments(practitionerId, scope) {
       await ensurePractitionerExists(repository, practitionerId);
-      return repository.listAssignments(practitionerId);
+      return repository.listAssignments(practitionerId, scope);
     },
 
     async updateAssignment(practitionerId, assignmentId, input) {

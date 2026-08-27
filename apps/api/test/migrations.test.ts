@@ -11,6 +11,10 @@ describe('migration catalog', () => {
     const catalog = buildMigrationCatalogFromFiles(
       [
         {
+          filename: '006_create_workforce_access_control.sql',
+          sql: '-- up 6',
+        },
+        {
           filename: '005_create_appointment_reminders.sql',
           sql: '-- up 5',
         },
@@ -26,6 +30,10 @@ describe('migration catalog', () => {
         { filename: '001_create_healthcare_facilities.sql', sql: '-- up 1' },
       ],
       [
+        {
+          filename: '006_create_workforce_access_control.sql',
+          sql: '-- down 6',
+        },
         {
           filename: '004_create_appointments.sql',
           sql: '-- down 4',
@@ -52,6 +60,7 @@ describe('migration catalog', () => {
       '003',
       '004',
       '005',
+      '006',
     ]);
   });
 
@@ -108,4 +117,43 @@ describe('migration catalog', () => {
       ),
     ).toThrow(/checksum/i);
   });
+
+  it('defines and rolls back the workforce authority tables in dependency order', () => {
+    const migrationDirectory = fileURLToPath(
+      new URL('../database/migrations/', import.meta.url),
+    );
+    const up = readFileSync(
+      `${migrationDirectory}/up/006_create_workforce_access_control.sql`,
+      'utf8',
+    );
+    const down = readFileSync(
+      `${migrationDirectory}/down/006_create_workforce_access_control.sql`,
+      'utf8',
+    );
+
+    expect(up).toContain('CREATE TABLE workforce_actors');
+    expect(up).toContain('CREATE TABLE workforce_role_assignments');
+    expect(up).toContain('CREATE TABLE workforce_sessions');
+    expect(up).toContain("'OPERATIONS_OPERATOR'");
+    expect(up).not.toContain("'PATIENT'");
+    expect(up).toContain('ON DELETE RESTRICT');
+    const identifiers = [
+      ...up.matchAll(/\bCONSTRAINT\s+([a-z0-9_]+)/g),
+      ...up.matchAll(/\bCREATE (?:UNIQUE )?INDEX\s+([a-z0-9_]+)/g),
+    ].map((match) => match[1]!);
+    expect(identifiers.length).toBeGreaterThan(0);
+    expect(
+      identifiers.every(
+        (identifier) => Buffer.byteLength(identifier, 'utf8') <= 63,
+      ),
+    ).toBe(true);
+    expect(down.indexOf('workforce_sessions')).toBeLessThan(
+      down.indexOf('workforce_role_assignments'),
+    );
+    expect(down.indexOf('workforce_role_assignments')).toBeLessThan(
+      down.indexOf('workforce_actors'),
+    );
+  });
 });
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';

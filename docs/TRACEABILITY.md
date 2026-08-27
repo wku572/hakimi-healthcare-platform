@@ -42,7 +42,7 @@ Governance records do not replace operation-level functional mappings. The two c
 
 ## Sprint 15 Workforce Authorization Matrix
 
-This matrix records the workforce resolution of `OPEN-03`, `OPEN-04`, and `OPEN-05` under the [APPROVED WITH REVISIONS authority](./ACCESS_CONTROL_BASELINE.md#recorded-approval). It defines planned Sprint 15 behavior, not current runtime behavior. Approval is limited to design, implementation, and testing with synthetic data and does not authorize production or real patient-data processing. Every current public operation appears exactly once and is marked approved or blocked. Patient roles and patient self-service do not appear in any permitted-actor cell.
+This matrix records the implemented workforce resolution of `OPEN-03`, `OPEN-04`, and `OPEN-05` under the [APPROVED WITH REVISIONS authority](./ACCESS_CONTROL_BASELINE.md#recorded-approval). Sprint 15 runtime behavior implements this matrix only for synthetic-data design and testing; it does not authorize production or real patient-data processing. Every current public operation appears exactly once and is marked approved or blocked. Patient roles and patient self-service do not appear in any permitted-actor cell.
 
 Independent reconciliation result:
 

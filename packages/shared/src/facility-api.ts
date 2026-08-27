@@ -54,6 +54,8 @@ export type HealthcareFacilityListResponse = {
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'
   | 'INVALID_JSON'
+  | 'AUTHENTICATION_REQUIRED'
+  | 'FORBIDDEN'
   | 'FACILITY_NOT_FOUND'
   | 'FACILITY_CODE_CONFLICT'
   | 'FACILITY_LICENSE_CONFLICT'

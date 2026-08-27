@@ -8,13 +8,25 @@ import {
   parseUpdateAppointmentInput,
 } from './schemas.js';
 import type { AppointmentService } from './service.js';
+import {
+  denyRouteAuthorizer,
+  type RouteAuthorizer,
+} from '../access/service.js';
 
-export function createAppointmentsRouter(service: AppointmentService): Router {
+export function createAppointmentsRouter(
+  service: AppointmentService,
+  authorizer: RouteAuthorizer = denyRouteAuthorizer,
+): Router {
   const router = createRouter();
 
   router.post('/', async (request, response, next) => {
     try {
       const input = parseCreateAppointmentInput(request.body);
+      await authorizer.authorize(response, 'createAppointment', input, {
+        facilityId: input.facilityId,
+        practitionerId: input.practitionerId,
+        patientId: input.patientId,
+      });
       const appointment = await service.createAppointment(input);
 
       response
@@ -29,7 +41,14 @@ export function createAppointmentsRouter(service: AppointmentService): Router {
   router.get('/', async (request, response, next) => {
     try {
       const query = parseListAppointmentsQuery(request.query);
-      const appointments = await service.listAppointments(query);
+      const authorization = await authorizer.authorize(
+        response,
+        'listAppointments',
+      );
+      const appointments = await service.listAppointments(
+        query,
+        authorization.scope,
+      );
 
       response.status(200).json(appointments);
     } catch (error) {
@@ -40,6 +59,9 @@ export function createAppointmentsRouter(service: AppointmentService): Router {
   router.get('/:appointmentId', async (request, response, next) => {
     try {
       const { appointmentId } = parseAppointmentIdParam(request.params);
+      await authorizer.authorize(response, 'getAppointmentById', undefined, {
+        appointmentId,
+      });
       const appointment = await service.getAppointmentById(appointmentId);
 
       response.status(200).json(appointment);
@@ -52,6 +74,9 @@ export function createAppointmentsRouter(service: AppointmentService): Router {
     try {
       const { appointmentId } = parseAppointmentIdParam(request.params);
       const input = parseUpdateAppointmentInput(request.body);
+      await authorizer.authorize(response, 'updateAppointment', input, {
+        appointmentId,
+      });
       const appointment = await service.updateAppointment(appointmentId, input);
 
       response.status(200).json(appointment);
@@ -64,6 +89,9 @@ export function createAppointmentsRouter(service: AppointmentService): Router {
     try {
       const { appointmentId } = parseAppointmentIdParam(request.params);
       const input = parseCancelAppointmentInput(request.body);
+      await authorizer.authorize(response, 'cancelAppointment', input, {
+        appointmentId,
+      });
       const appointment = await service.cancelAppointment(appointmentId, input);
 
       response.status(200).json(appointment);

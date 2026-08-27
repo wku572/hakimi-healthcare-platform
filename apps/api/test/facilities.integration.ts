@@ -9,6 +9,10 @@ import {
 import { loadEnvironment } from '../src/env.js';
 import { createHealthcareFacilitiesModule } from '../src/facilities/module.js';
 import { runMigrationCommand } from '../src/migrations/runner.js';
+import {
+  allowAllAccessMiddleware,
+  allowAllRouteAuthorizer,
+} from './helpers/access.js';
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('test:integration:db refuses to run in production.');
@@ -28,10 +32,14 @@ describe.sequential('PostgreSQL facility integration', () => {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
   const readinessCheck = createDatabaseReadinessCheck(pool);
-  const facilitiesModule = createHealthcareFacilitiesModule(pool);
+  const facilitiesModule = createHealthcareFacilitiesModule(
+    pool,
+    allowAllRouteAuthorizer,
+  );
   const app = createApp({
     readinessCheck,
     facilitiesRouter: facilitiesModule.router,
+    accessAuthenticationMiddleware: allowAllAccessMiddleware,
   });
 
   beforeAll(async () => {

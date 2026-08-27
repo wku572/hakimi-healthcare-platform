@@ -18,6 +18,7 @@ Event-specific fields are selected from this closed allowlist:
 - API request fields: `requestId`, `method`, `route`, `statusCode`, `durationMs`, and `errorCode`
 - API lifecycle fields: `port`, `signal`, and `failureStage`
 - Worker aggregate fields: `claimedCount`, `deliveredCount`, `cancelledCount`, `supersededCount`, `retriedCount`, `deadLetteredCount`, and `skippedCount`
+- Access provisioning fields: `affectedCount` only
 
 Unknown fields and unsafe values are discarded by the logger boundary.
 
@@ -38,6 +39,11 @@ Unknown fields and unsafe values are discarded by the logger boundary.
 | `API_SHUTDOWN_COMPLETED`          | INFO            | `hakimi-api`             | HTTP server and PostgreSQL pool closed successfully         |
 | `API_SHUTDOWN_FAILED`             | ERROR           | `hakimi-api`             | A safe `failureStage` identifies the lifecycle boundary     |
 | `DATABASE_POOL_ERROR`             | ERROR           | API or worker            | PostgreSQL pool emitted an unexpected background error      |
+| `AUTHENTICATION_REJECTED`         | WARN/ERROR      | `hakimi-api`             | Generic token, actor, or session rejection                  |
+| `AUTHORIZATION_DENIED`            | WARN            | `hakimi-api`             | Generic operation, field, scope, or relationship denial     |
+| `ACCESS_REVOCATION_FAILED`        | ERROR           | `hakimi-api`             | Retryable post-commit session revocation failed opaquely    |
+| `ACCESS_PROVISIONING_COMPLETED`   | INFO            | `hakimi-api`             | Controlled provisioning completed with an aggregate count   |
+| `ACCESS_PROVISIONING_FAILED`      | ERROR           | `hakimi-api`             | Controlled provisioning failed without payload disclosure   |
 | `REMINDER_WORKER_STARTED`         | INFO            | `hakimi-reminder-worker` | Worker polling loop started                                 |
 | `REMINDER_WORKER_FAILED`          | ERROR           | `hakimi-reminder-worker` | Worker bootstrap or terminal lifecycle failure              |
 | `REMINDER_CYCLE_COMPLETED`        | INFO            | `hakimi-reminder-worker` | One polling cycle completed with aggregate outcome counts   |
@@ -58,6 +64,7 @@ Runtime logs must never include:
 
 - request or response bodies;
 - query values, headers, cookies, or authorization material;
+- credentials, bearer tokens, claims, OIDC issuer or subject values, session identifiers, roles, scopes, or authorization state;
 - concrete patient, practitioner, facility, appointment, registration, reminder, or assignment identifiers;
 - names, email addresses, phone numbers, addresses, medical record numbers, or reminder content;
 - SQL text, database URLs, constraint details, raw error messages, or stack traces;
@@ -66,6 +73,30 @@ Runtime logs must never include:
 Routes are logged from a closed catalogue using templates such as `/api/v1/patients/:patientId`. Unknown paths are recorded as `UNMATCHED`; their original path is not logged. The worker emits one aggregate summary per completed cycle and no per-reminder diagnostic event.
 
 These diagnostics are operational telemetry, not clinical audit records. Audit requirements remain an open stakeholder decision.
+
+## Workforce Access Operations
+
+Sprint 15 is a synthetic-data-only workforce resource-server baseline. It is not authorized for production or real patient-data processing. Patient authentication, login, recovery, patient self-service, HTTP role administration, and practitioner access to standalone patient records are unavailable.
+
+The API requires OIDC configuration through `OIDC_ISSUER`, `OIDC_AUDIENCE`, `OIDC_JWKS_URI`, `OIDC_ALLOWED_ALGORITHMS`, `OIDC_REQUIRED_ACR_VALUES`, and `OIDC_CLOCK_TOLERANCE_SECONDS`. Production JWKS endpoints must use HTTPS. Only loopback HTTP JWKS endpoints are accepted in development or test. The resource server requires a signed short-lived JWT, an exact issuer and string audience, a bounded subject and session claim, workforce MFA, a maximum ten-minute token lifetime, an eight-hour authentication/session lifetime, and a 30-minute local inactivity window.
+
+Provision synthetic workforce authority from an interactive terminal:
+
+```bash
+npm run access:provision
+```
+
+The command accepts no payload values as arguments and does not echo input. Use only fictional issuers, subjects, actors, practitioners, and facilities. On Windows, noninteractive input is rejected. On POSIX systems, redirected input must be a regular file restricted to the current account; delete it immediately after use. Never use a pipe, source-controlled file, synchronized folder, or real identity value.
+
+Role or actor reduction revokes local sessions in the same provisioning transaction. Facility, practitioner, and practitioner-assignment lifecycle changes atomically advance the affected workforce actor or role `activated_at` epoch, then perform the required idempotent post-commit session-revocation follow-up. `ACCESS_REVOCATION_FAILED` is the opaque retry signal; current-state and authority-epoch SQL checks fail closed even before that follow-up succeeds. Final authorization locks and revalidates the exact operation target before touching session activity. An epoch newer than OIDC `auth_time` cannot be used until reauthentication. General domain `updated_at` audit timestamps are not authority epochs: facility contact edits, practitioner profile edits, and assignment role-title, department, or primary-designation edits do not revoke or deny an otherwise authorized session.
+
+| Committed lifecycle target | Recovery action                | Required stdin field |
+| -------------------------- | ------------------------------ | -------------------- |
+| Facility                   | `REVOKE_FACILITY_SESSIONS`     | `facilityId`         |
+| Practitioner               | `REVOKE_PRACTITIONER_SESSIONS` | `practitionerId`     |
+| Practitioner assignment    | `REVOKE_ASSIGNMENT_SESSIONS`   | `assignmentId`       |
+
+Recovery accepts exactly the action and its one UUID field. It never accepts a role, token, claim, subject, session identifier, domain payload, or command-line value.
 
 ## Configuration
 
@@ -103,6 +134,15 @@ The response headers include the effective `X-Request-ID`. Use that value to fin
 2. Find `HTTP_UNEXPECTED_ERROR` and `HTTP_REQUEST_COMPLETED` for that request ID.
 3. Check for nearby `DATABASE_POOL_ERROR` events and PostgreSQL container health.
 4. Reproduce with non-sensitive test data. Raw production values must not be copied into tickets or logs.
+
+### Workforce request returns HTTP 401, 403, or 404
+
+1. Retain only the response `X-Request-ID`; never retain the bearer token or claims.
+2. For `401`, verify OIDC reachability and configuration, then use the approved identity-provider and provisioning procedures without inspecting token contents in logs.
+3. For `403`, confirm the intended operation is approved for the workforce role. Do not add policy details to the client response.
+4. Treat a resource `404` as absent or outside the actor's current scope; do not use privileged database queries to disclose which case occurred.
+5. If `ACCESS_REVOCATION_FAILED` appears after a committed domain state change, run `npm run access:provision` and submit exactly one matching stdin-only recovery action: `REVOKE_FACILITY_SESSIONS`, `REVOKE_PRACTITIONER_SESSIONS`, or `REVOKE_ASSIGNMENT_SESSIONS`. Supply only the strict target identifier field required by that action. The recovery transaction revokes currently active affected sessions and returns only an aggregate count; repeating it returns zero after recovery and never replays the domain mutation.
+6. Never place recovery payloads or target identifiers in command-line arguments, shell history, tickets, logs, or persistent error output. Follow the same hidden interactive input and restricted-file rules as initial provisioning.
 
 ### Readiness returns HTTP 503
 
@@ -152,4 +192,4 @@ docker compose config
 docker build -t hakimi-healthcare-platform:ci .
 ```
 
-No public metrics endpoint, tracing backend, hosted monitoring provider, authentication mechanism, or production alert destination is configured by this observability baseline.
+No public metrics endpoint, tracing backend, hosted monitoring provider, patient authentication mechanism, production identity provider, or production alert destination is configured. Sprint 15 adds only the synthetic workforce resource-server boundary and does not authorize production use.

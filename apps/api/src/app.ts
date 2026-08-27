@@ -1,6 +1,7 @@
-import type { Router } from 'express';
+import type { RequestHandler, Router } from 'express';
 import express from 'express';
 import { createApiErrorHandler } from './http/error-middleware.js';
+import { createAuthenticationRequiredError } from './http/api-error.js';
 import { createRequestObservabilityMiddleware } from './http/request-observability.js';
 import {
   OBSERVABILITY_EVENT_CODES,
@@ -31,9 +32,22 @@ type CreateAppOptions = {
   patientsRouter?: Router;
   appointmentsRouter?: Router;
   logger?: ObservabilityLogger;
+  accessAuthenticationMiddleware?: RequestHandler;
 };
 
 const defaultReadinessCheck: ReadinessCheck = async () => false;
+const defaultAccessAuthenticationMiddleware: RequestHandler = (
+  request,
+  _response,
+  next,
+) => {
+  if (request.path.startsWith('/api/v1/')) {
+    next(createAuthenticationRequiredError());
+    return;
+  }
+
+  next();
+};
 
 export function createApp(options: CreateAppOptions = {}) {
   const readinessCheck = options.readinessCheck ?? defaultReadinessCheck;
@@ -42,10 +56,12 @@ export function createApp(options: CreateAppOptions = {}) {
   const patientsRouter = options.patientsRouter;
   const appointmentsRouter = options.appointmentsRouter;
   const logger = options.logger ?? noopObservabilityLogger;
+  const accessAuthenticationMiddleware =
+    options.accessAuthenticationMiddleware ??
+    defaultAccessAuthenticationMiddleware;
   const app = express();
 
   app.use(createRequestObservabilityMiddleware(logger));
-  app.use(express.json({ limit: '100kb' }));
 
   app.get('/health/live', (_request, response) => {
     const payload: HealthResponse = {
@@ -84,6 +100,9 @@ export function createApp(options: CreateAppOptions = {}) {
     });
     response.status(503).json(payload);
   });
+
+  app.use(accessAuthenticationMiddleware);
+  app.use(express.json({ limit: '100kb' }));
 
   if (facilitiesRouter) {
     app.use('/api/v1/facilities', facilitiesRouter);

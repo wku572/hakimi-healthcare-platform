@@ -6,6 +6,7 @@ import type {
   PatientPagination,
   UpdatePatientInput,
 } from '@hakimi/shared';
+import type { DomainAuthorizationScope } from '../access/types.js';
 import type { Pool } from 'pg';
 import { isFacilityType } from '@hakimi/shared';
 import {
@@ -152,10 +153,37 @@ function normalizePatientSearchPattern(value: string) {
   return value.replace(/[\\%_]/g, '\\$&');
 }
 
-function buildPatientFilterSql(query: PatientListQuery) {
+function buildPatientFilterSql(
+  query: PatientListQuery,
+  scope?: DomainAuthorizationScope,
+) {
   const clauses: string[] = [];
   const values: unknown[] = [];
   const registrationExactClauses: string[] = [];
+
+  if (scope && !scope.isPlatformAdmin) {
+    values.push(scope.actorId);
+    const actorParameter = `$${values.length}`;
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM patient_facility_registrations authorized_registration
+      JOIN healthcare_facilities authorized_facility
+        ON authorized_facility.id = authorized_registration.facility_id
+       AND authorized_facility.is_active = true
+      WHERE authorized_registration.patient_id = patients.id
+        AND EXISTS (
+          SELECT 1
+          FROM workforce_actors scoped_actor
+          JOIN workforce_role_assignments scoped_role
+            ON scoped_role.actor_id = scoped_actor.id
+           AND scoped_role.is_active = true
+           AND scoped_role.role IN ('FACILITY_ADMIN', 'SCHEDULER')
+           AND scoped_role.facility_id = authorized_registration.facility_id
+          WHERE scoped_actor.id = ${actorParameter}
+            AND scoped_actor.is_active = true
+        )
+    )`);
+  }
 
   if (query.isActive !== undefined) {
     values.push(query.isActive);
@@ -235,9 +263,30 @@ function buildPatientFilterSql(query: PatientListQuery) {
 async function loadRegistrationsForPatientIds(
   db: DbExecutor,
   patientIds: string[],
+  scope?: DomainAuthorizationScope,
 ): Promise<Map<string, PatientFacilityRegistration[]>> {
   if (patientIds.length === 0) {
     return new Map();
+  }
+
+  const values: unknown[] = [patientIds];
+  const scopeSql =
+    scope && !scope.isPlatformAdmin
+      ? `AND EXISTS (
+        SELECT 1
+        FROM workforce_actors scoped_actor
+        JOIN workforce_role_assignments scoped_role
+          ON scoped_role.actor_id = scoped_actor.id
+         AND scoped_role.is_active = true
+         AND scoped_role.role IN ('FACILITY_ADMIN', 'SCHEDULER')
+         AND scoped_role.facility_id = r.facility_id
+        WHERE scoped_actor.id = $2
+          AND scoped_actor.is_active = true
+      )`
+      : '';
+
+  if (scope && !scope.isPlatformAdmin) {
+    values.push(scope.actorId);
   }
 
   const result = await db.query<PatientRegistrationRow>(
@@ -246,9 +295,10 @@ async function loadRegistrationsForPatientIds(
       FROM patient_facility_registrations r
       JOIN healthcare_facilities f ON f.id = r.facility_id
       WHERE r.patient_id = ANY($1::uuid[])
+        ${scopeSql}
       ORDER BY r.patient_id ASC, r.created_at ASC, r.id ASC
     `,
-    [patientIds],
+    values,
   );
 
   const registrationsByPatientId = new Map<
@@ -291,15 +341,18 @@ export type PatientRepository = {
   findPatientById(id: string, db?: DbExecutor): Promise<PatientRow | null>;
   listPatients(
     query: PatientListQuery,
+    scope?: DomainAuthorizationScope,
     db?: DbExecutor,
   ): Promise<PatientSearchResult>;
   findRegistrationsByPatientId(
     patientId: string,
     db?: DbExecutor,
+    scope?: DomainAuthorizationScope,
   ): Promise<PatientFacilityRegistration[]>;
   findRegistrationsByPatientIds(
     patientIds: string[],
     db?: DbExecutor,
+    scope?: DomainAuthorizationScope,
   ): Promise<Map<string, PatientFacilityRegistration[]>>;
   createPatientRegistration(
     input: CreatePatientRegistrationInput,
@@ -442,8 +495,8 @@ export function createPatientRepository(
       return result.rows[0] ?? null;
     },
 
-    async listPatients(query, executor = db) {
-      const { whereSql, values } = buildPatientFilterSql(query);
+    async listPatients(query, scope, executor = db) {
+      const { whereSql, values } = buildPatientFilterSql(query, scope);
       const countResult = await executor.query<{ total_items: number }>(
         `
           SELECT COUNT(*)::int AS total_items
@@ -482,23 +535,44 @@ export function createPatientRepository(
       };
     },
 
-    async findRegistrationsByPatientId(patientId, executor = db) {
+    async findRegistrationsByPatientId(patientId, executor = db, scope) {
+      const values: unknown[] = [patientId];
+      const scopeSql =
+        scope && !scope.isPlatformAdmin
+          ? `AND EXISTS (
+            SELECT 1
+            FROM workforce_actors scoped_actor
+            JOIN workforce_role_assignments scoped_role
+              ON scoped_role.actor_id = scoped_actor.id
+             AND scoped_role.is_active = true
+             AND scoped_role.role IN ('FACILITY_ADMIN', 'SCHEDULER')
+             AND scoped_role.facility_id = r.facility_id
+            WHERE scoped_actor.id = $2
+              AND scoped_actor.is_active = true
+          )`
+          : '';
+
+      if (scope && !scope.isPlatformAdmin) {
+        values.push(scope.actorId);
+      }
+
       const result = await executor.query<PatientRegistrationRow>(
         `
           SELECT ${REGISTRATION_SELECT_COLUMNS}
           FROM patient_facility_registrations r
           JOIN healthcare_facilities f ON f.id = r.facility_id
           WHERE r.patient_id = $1
+            ${scopeSql}
           ORDER BY r.created_at ASC, r.id ASC
         `,
-        [patientId],
+        values,
       );
 
       return result.rows.map(mapRegistrationRow);
     },
 
-    async findRegistrationsByPatientIds(patientIds, executor = db) {
-      return loadRegistrationsForPatientIds(executor, patientIds);
+    async findRegistrationsByPatientIds(patientIds, executor = db, scope) {
+      return loadRegistrationsForPatientIds(executor, patientIds, scope);
     },
 
     async createPatientRegistration(input, executor = db) {

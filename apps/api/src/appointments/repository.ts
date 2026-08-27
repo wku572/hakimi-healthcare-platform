@@ -10,6 +10,7 @@ import type {
   CreateAppointmentInput,
   UpdateAppointmentInput,
 } from '@hakimi/shared';
+import type { DomainAuthorizationScope } from '../access/types.js';
 import type { Pool } from 'pg';
 import type { DbExecutor } from '../database-executor.js';
 import {
@@ -209,9 +210,51 @@ function mapAppointmentRow(row: AppointmentRow): Appointment {
   };
 }
 
-function buildAppointmentFilterSql(query: AppointmentListQuery) {
+function buildAppointmentFilterSql(
+  query: AppointmentListQuery,
+  scope?: DomainAuthorizationScope,
+) {
   const clauses: string[] = [];
   const values: unknown[] = [];
+
+  if (scope && !scope.isPlatformAdmin) {
+    values.push(scope.actorId);
+    const actorParameter = `$${values.length}`;
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM workforce_actors scoped_actor
+      JOIN healthcare_facilities scoped_facility
+        ON scoped_facility.id = a.facility_id
+       AND scoped_facility.is_active = true
+      WHERE scoped_actor.id = ${actorParameter}
+        AND scoped_actor.is_active = true
+        AND (
+          EXISTS (
+            SELECT 1
+            FROM workforce_role_assignments administrative_role
+            WHERE administrative_role.actor_id = scoped_actor.id
+              AND administrative_role.role IN ('FACILITY_ADMIN', 'SCHEDULER')
+              AND administrative_role.facility_id = a.facility_id
+              AND administrative_role.is_active = true
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM workforce_role_assignments practitioner_role
+            JOIN practitioners linked_practitioner
+              ON linked_practitioner.id = scoped_actor.practitioner_id
+             AND linked_practitioner.id = a.practitioner_id
+             AND linked_practitioner.is_active = true
+            JOIN practitioner_facility_assignments own_assignment
+              ON own_assignment.practitioner_id = linked_practitioner.id
+             AND own_assignment.facility_id = a.facility_id
+             AND own_assignment.is_active = true
+            WHERE practitioner_role.actor_id = scoped_actor.id
+              AND practitioner_role.role = 'PRACTITIONER'
+              AND practitioner_role.is_active = true
+          )
+        )
+    )`);
+  }
 
   if (query.facilityId) {
     values.push(query.facilityId);
@@ -344,6 +387,7 @@ export type AppointmentRepository = {
   ): Promise<AppointmentScheduleStateRow | null>;
   listAppointments(
     query: AppointmentListQuery,
+    scope?: DomainAuthorizationScope,
     db?: DbExecutor,
   ): Promise<AppointmentSearchResult>;
   updateAppointment(
@@ -462,8 +506,8 @@ export function createAppointmentRepository(
       return queryAppointmentScheduleStateById(executor, id);
     },
 
-    async listAppointments(query, executor = db) {
-      const { whereSql, values } = buildAppointmentFilterSql(query);
+    async listAppointments(query, scope, executor = db) {
+      const { whereSql, values } = buildAppointmentFilterSql(query, scope);
       const countResult = await executor.query<{ total_items: number }>(
         `
           SELECT COUNT(*)::int AS total_items
