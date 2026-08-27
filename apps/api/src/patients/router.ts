@@ -6,6 +6,10 @@ import {
 } from 'express';
 import type { PatientService } from './service.js';
 import {
+  denyRouteAuthorizer,
+  type RouteAuthorizer,
+} from '../access/service.js';
+import {
   parseCreatePatientInput,
   parseListPatientsQuery,
   parsePatientIdParam,
@@ -24,13 +28,19 @@ function wrapAsync(handler: AsyncHandler) {
   };
 }
 
-export function createPatientsRouter(service: PatientService) {
+export function createPatientsRouter(
+  service: PatientService,
+  authorizer: RouteAuthorizer = denyRouteAuthorizer,
+) {
   const router = Router();
 
   router.post(
     '/',
     wrapAsync(async (request, response) => {
       const input = parseCreatePatientInput(request.body);
+      await authorizer.authorize(response, 'createPatient', input, {
+        facilityId: input.facilityId,
+      });
       const patient = await service.createPatient(input);
 
       response
@@ -44,7 +54,11 @@ export function createPatientsRouter(service: PatientService) {
     '/',
     wrapAsync(async (request, response) => {
       const query = parseListPatientsQuery(request.query);
-      const patients = await service.listPatients(query);
+      const authorization = await authorizer.authorize(
+        response,
+        'listPatients',
+      );
+      const patients = await service.listPatients(query, authorization.scope);
 
       response.status(200).json(patients);
     }),
@@ -54,7 +68,16 @@ export function createPatientsRouter(service: PatientService) {
     '/:patientId',
     wrapAsync(async (request, response) => {
       const { patientId } = parsePatientIdParam(request.params);
-      const patient = await service.getPatientById(patientId);
+      const authorization = await authorizer.authorize(
+        response,
+        'getPatientById',
+        undefined,
+        { patientId },
+      );
+      const patient = await service.getPatientById(
+        patientId,
+        authorization.scope,
+      );
 
       response.status(200).json(patient);
     }),
@@ -65,7 +88,17 @@ export function createPatientsRouter(service: PatientService) {
     wrapAsync(async (request, response) => {
       const { patientId } = parsePatientIdParam(request.params);
       const input = parseUpdatePatientInput(request.body);
-      const patient = await service.updatePatient(patientId, input);
+      const authorization = await authorizer.authorize(
+        response,
+        'updatePatient',
+        input,
+        { patientId },
+      );
+      const patient = await service.updatePatient(
+        patientId,
+        input,
+        authorization.scope,
+      );
 
       response.status(200).json(patient);
     }),
@@ -75,6 +108,9 @@ export function createPatientsRouter(service: PatientService) {
     '/:patientId',
     wrapAsync(async (request, response) => {
       const { patientId } = parsePatientIdParam(request.params);
+      await authorizer.authorize(response, 'deactivatePatient', undefined, {
+        patientId,
+      });
       await service.deletePatient(patientId);
 
       response.status(204).send();

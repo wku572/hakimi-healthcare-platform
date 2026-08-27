@@ -6,6 +6,10 @@ import {
 } from 'express';
 import type { PractitionerService } from './service.js';
 import {
+  denyRouteAuthorizer,
+  type RouteAuthorizer,
+} from '../access/service.js';
+import {
   parseAssignmentIdParam,
   parseCreatePractitionerAssignmentInput,
   parseCreatePractitionerInput,
@@ -27,13 +31,17 @@ function wrapAsync(handler: AsyncHandler) {
   };
 }
 
-export function createPractitionersRouter(service: PractitionerService) {
+export function createPractitionersRouter(
+  service: PractitionerService,
+  authorizer: RouteAuthorizer = denyRouteAuthorizer,
+) {
   const router = Router();
 
   router.post(
     '/',
     wrapAsync(async (request, response) => {
       const input = parseCreatePractitionerInput(request.body);
+      await authorizer.authorize(response, 'createPractitioner', input);
       const practitioner = await service.createPractitioner(input);
 
       response
@@ -47,7 +55,14 @@ export function createPractitionersRouter(service: PractitionerService) {
     '/',
     wrapAsync(async (request, response) => {
       const query = parseListPractitionersQuery(request.query);
-      const practitioners = await service.listPractitioners(query);
+      const authorization = await authorizer.authorize(
+        response,
+        'listPractitioners',
+      );
+      const practitioners = await service.listPractitioners(
+        query,
+        authorization.scope,
+      );
 
       response.status(200).json(practitioners);
     }),
@@ -57,6 +72,9 @@ export function createPractitionersRouter(service: PractitionerService) {
     '/:practitionerId',
     wrapAsync(async (request, response) => {
       const { practitionerId } = parsePractitionerIdParam(request.params);
+      await authorizer.authorize(response, 'getPractitionerById', undefined, {
+        practitionerId,
+      });
       const practitioner = await service.getPractitionerById(practitionerId);
 
       response.status(200).json(practitioner);
@@ -68,10 +86,17 @@ export function createPractitionersRouter(service: PractitionerService) {
     wrapAsync(async (request, response) => {
       const { practitionerId } = parsePractitionerIdParam(request.params);
       const input = parseUpdatePractitionerInput(request.body);
+      await authorizer.authorize(response, 'updatePractitioner', input, {
+        practitionerId,
+      });
       const practitioner = await service.updatePractitioner(
         practitionerId,
         input,
       );
+
+      if (input.isActive !== undefined) {
+        await authorizer.revokeForPractitioner(practitionerId);
+      }
 
       response.status(200).json(practitioner);
     }),
@@ -81,7 +106,14 @@ export function createPractitionersRouter(service: PractitionerService) {
     '/:practitionerId',
     wrapAsync(async (request, response) => {
       const { practitionerId } = parsePractitionerIdParam(request.params);
+      await authorizer.authorize(
+        response,
+        'deactivatePractitioner',
+        undefined,
+        { practitionerId },
+      );
       await service.deletePractitioner(practitionerId);
+      await authorizer.revokeForPractitioner(practitionerId);
 
       response.status(204).send();
     }),
@@ -92,7 +124,14 @@ export function createPractitionersRouter(service: PractitionerService) {
     wrapAsync(async (request, response) => {
       const { practitionerId } = parsePractitionerIdParam(request.params);
       const input = parseCreatePractitionerAssignmentInput(request.body);
+      await authorizer.authorize(
+        response,
+        'createPractitionerAssignment',
+        input,
+        { practitionerId, facilityId: input.facilityId },
+      );
       const assignment = await service.createAssignment(practitionerId, input);
+      await authorizer.revokeForAssignment(assignment.id);
 
       response
         .status(201)
@@ -107,7 +146,16 @@ export function createPractitionersRouter(service: PractitionerService) {
     '/:practitionerId/facilities',
     wrapAsync(async (request, response) => {
       const { practitionerId } = parsePractitionerIdParam(request.params);
-      const assignments = await service.listAssignments(practitionerId);
+      const authorization = await authorizer.authorize(
+        response,
+        'listPractitionerAssignments',
+        undefined,
+        { practitionerId },
+      );
+      const assignments = await service.listAssignments(
+        practitionerId,
+        authorization.scope,
+      );
 
       response.status(200).json(assignments);
     }),
@@ -123,11 +171,21 @@ export function createPractitionersRouter(service: PractitionerService) {
         assignmentId: request.params.assignmentId,
       });
       const input = parseUpdatePractitionerAssignmentInput(request.body);
+      await authorizer.authorize(
+        response,
+        'updatePractitionerAssignment',
+        input,
+        { practitionerId, assignmentId },
+      );
       const assignment = await service.updateAssignment(
         practitionerId,
         assignmentId,
         input,
       );
+
+      if (input.isActive !== undefined) {
+        await authorizer.revokeForAssignment(assignmentId);
+      }
 
       response.status(200).json(assignment);
     }),
@@ -142,7 +200,14 @@ export function createPractitionersRouter(service: PractitionerService) {
       const { assignmentId } = parseAssignmentIdParam({
         assignmentId: request.params.assignmentId,
       });
+      await authorizer.authorize(
+        response,
+        'deactivatePractitionerAssignment',
+        undefined,
+        { practitionerId, assignmentId },
+      );
       await service.deleteAssignment(practitionerId, assignmentId);
+      await authorizer.revokeForAssignment(assignmentId);
 
       response.status(204).send();
     }),

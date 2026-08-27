@@ -49,6 +49,9 @@ export function createApiErrorHandler(
         errorCode: error.code,
         statusCode: error.statusCode,
       });
+      if (error.statusCode === 401) {
+        response.setHeader('WWW-Authenticate', 'Bearer');
+      }
       response.status(error.statusCode).json(payload);
       return;
     }

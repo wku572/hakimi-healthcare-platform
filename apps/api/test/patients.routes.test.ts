@@ -8,6 +8,11 @@ import {
 } from '../src/http/api-error.js';
 import { createApp } from '../src/app.js';
 import { createPatientsRouter } from '../src/patients/router.js';
+import {
+  allowAllAccessMiddleware,
+  allowAllRouteAuthorizer,
+  allowAllScope,
+} from './helpers/access.js';
 import type { PatientService } from '../src/patients/service.js';
 
 function createPatientServiceMock(): Mocked<PatientService> {
@@ -23,7 +28,8 @@ function createPatientServiceMock(): Mocked<PatientService> {
 function createTestApp(service = createPatientServiceMock()) {
   return {
     app: createApp({
-      patientsRouter: createPatientsRouter(service),
+      patientsRouter: createPatientsRouter(service, allowAllRouteAuthorizer),
+      accessAuthenticationMiddleware: allowAllAccessMiddleware,
     }),
     service,
   };
@@ -218,10 +224,10 @@ describe('patient routes', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(listResponse);
-    expect(service.listPatients).toHaveBeenCalledWith({
-      page: 1,
-      pageSize: 20,
-    });
+    expect(service.listPatients).toHaveBeenCalledWith(
+      { page: 1, pageSize: 20 },
+      allowAllScope,
+    );
   });
 
   it('passes patient list filters through to the service', async () => {
@@ -237,15 +243,18 @@ describe('patient routes', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(service.listPatients).toHaveBeenCalledWith({
-      page: 1,
-      pageSize: 20,
-      facilityId,
-      medicalRecordNumber: 'MRN-001',
-      administrativeSex: 'female',
-      isActive: false,
-      search: 'mek',
-    });
+    expect(service.listPatients).toHaveBeenCalledWith(
+      {
+        page: 1,
+        pageSize: 20,
+        facilityId,
+        medicalRecordNumber: 'MRN-001',
+        administrativeSex: 'female',
+        isActive: false,
+        search: 'mek',
+      },
+      allowAllScope,
+    );
   });
 
   it('returns a patient by id', async () => {
@@ -256,7 +265,10 @@ describe('patient routes', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(patient);
-    expect(service.getPatientById).toHaveBeenCalledWith(patientId);
+    expect(service.getPatientById).toHaveBeenCalledWith(
+      patientId,
+      allowAllScope,
+    );
   });
 
   it('rejects invalid patient ids before calling the service', async () => {
@@ -293,11 +305,15 @@ describe('patient routes', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(updatedPatient);
-    expect(service.updatePatient).toHaveBeenCalledWith(patientId, {
-      firstName: 'Mekdes Updated',
-      email: 'mekdes.updated@example.org',
-      isActive: false,
-    });
+    expect(service.updatePatient).toHaveBeenCalledWith(
+      patientId,
+      {
+        firstName: 'Mekdes Updated',
+        email: 'mekdes.updated@example.org',
+        isActive: false,
+      },
+      allowAllScope,
+    );
   });
 
   it('rejects an empty PATCH body', async () => {

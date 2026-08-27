@@ -1519,6 +1519,402 @@ async function verifyAppointmentReminderSchema(client: {
   });
 }
 
+async function verifyWorkforceActorSchema(client: {
+  query<T extends Record<string, unknown>>(
+    text: string,
+    values?: unknown[],
+  ): Promise<{ rows: T[] }>;
+}) {
+  await assertTableExists(client, 'workforce_actors');
+  await assertColumns(client, 'workforce_actors', [
+    {
+      column_name: 'id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'uuidv7()',
+    },
+    {
+      column_name: 'oidc_issuer',
+      data_type: 'character varying(500)',
+      character_maximum_length: 500,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'oidc_subject',
+      data_type: 'character varying(255)',
+      character_maximum_length: 255,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'practitioner_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'is_active',
+      data_type: 'boolean',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'true',
+    },
+    {
+      column_name: 'activated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+    {
+      column_name: 'deactivated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'created_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+    {
+      column_name: 'updated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+  ]);
+  await assertConstraints(client, 'workforce_actors', {
+    workforce_actors_pkey: { type: 'p', columns: ['id'] },
+    workforce_actors_issuer_subject_key: {
+      type: 'u',
+      columns: ['oidc_issuer', 'oidc_subject'],
+    },
+    workforce_actors_practitioner_id_fkey: {
+      type: 'f',
+      columns: ['practitioner_id'],
+      definitionFragments: [
+        'references practitioners(id)',
+        'on delete restrict',
+      ],
+    },
+    workforce_actors_issuer_not_blank_check: {
+      type: 'c',
+      columns: ['oidc_issuer'],
+      definitionFragments: ["btrim(oidc_issuer::text) <> ''::text"],
+    },
+    workforce_actors_subject_not_blank_check: {
+      type: 'c',
+      columns: ['oidc_subject'],
+      definitionFragments: ["btrim(oidc_subject::text) <> ''::text"],
+    },
+    workforce_actors_state_check: {
+      type: 'c',
+      columns: ['is_active', 'deactivated_at'],
+      definitionFragments: [
+        'is_active = true',
+        'deactivated_at is null',
+        'is_active = false',
+        'deactivated_at is not null',
+      ],
+    },
+  });
+  await assertIndexes(client, 'workforce_actors', {
+    workforce_actors_practitioner_unique_idx: {
+      definitionFragments: [
+        'create unique index workforce_actors_practitioner_unique_idx',
+        '(practitioner_id)',
+        'where (practitioner_id is not null)',
+      ],
+    },
+    workforce_actors_active_idx: {
+      definitionFragments: [
+        'create index workforce_actors_active_idx',
+        '(id)',
+        'where (is_active = true)',
+      ],
+    },
+  });
+}
+
+async function verifyWorkforceRoleAssignmentSchema(client: {
+  query<T extends Record<string, unknown>>(
+    text: string,
+    values?: unknown[],
+  ): Promise<{ rows: T[] }>;
+}) {
+  await assertTableExists(client, 'workforce_role_assignments');
+  await assertColumns(client, 'workforce_role_assignments', [
+    {
+      column_name: 'id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'uuidv7()',
+    },
+    {
+      column_name: 'actor_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'role',
+      data_type: 'character varying(30)',
+      character_maximum_length: 30,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'facility_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'is_active',
+      data_type: 'boolean',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'true',
+    },
+    {
+      column_name: 'activated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+    {
+      column_name: 'deactivated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'created_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+    {
+      column_name: 'updated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+  ]);
+  await assertConstraints(client, 'workforce_role_assignments', {
+    workforce_role_assignments_pkey: { type: 'p', columns: ['id'] },
+    workforce_role_assignments_actor_id_fkey: {
+      type: 'f',
+      columns: ['actor_id'],
+      definitionFragments: [
+        'references workforce_actors(id)',
+        'on delete restrict',
+      ],
+    },
+    workforce_role_assignments_facility_id_fkey: {
+      type: 'f',
+      columns: ['facility_id'],
+      definitionFragments: [
+        'references healthcare_facilities(id)',
+        'on delete restrict',
+      ],
+    },
+    workforce_role_assignments_role_check: {
+      type: 'c',
+      columns: ['role'],
+      definitionFragments: [
+        'role::text = upper(btrim(role::text))',
+        "'platform_admin'::character varying",
+        "'facility_admin'::character varying",
+        "'scheduler'::character varying",
+        "'practitioner'::character varying",
+        "'operations_operator'::character varying",
+      ],
+    },
+    workforce_role_assignments_scope_check: {
+      type: 'c',
+      columns: ['role', 'facility_id'],
+      definitionFragments: ['facility_id is not null', 'facility_id is null'],
+    },
+    workforce_role_assignments_state_check: {
+      type: 'c',
+      columns: ['is_active', 'deactivated_at'],
+      definitionFragments: [
+        'is_active = true',
+        'deactivated_at is null',
+        'is_active = false',
+        'deactivated_at is not null',
+      ],
+    },
+  });
+  await assertIndexes(client, 'workforce_role_assignments', {
+    workforce_roles_actor_global_unique_idx: {
+      definitionFragments: [
+        'create unique index workforce_roles_actor_global_unique_idx',
+        '(actor_id, role)',
+        'where (facility_id is null)',
+      ],
+    },
+    workforce_roles_actor_facility_unique_idx: {
+      definitionFragments: [
+        'create unique index workforce_roles_actor_facility_unique_idx',
+        '(actor_id, role, facility_id)',
+        'where (facility_id is not null)',
+      ],
+    },
+    workforce_roles_active_actor_idx: {
+      definitionFragments: [
+        '(actor_id, role, facility_id)',
+        'where (is_active = true)',
+      ],
+    },
+    workforce_roles_active_facility_idx: {
+      definitionFragments: [
+        '(facility_id, role, actor_id)',
+        'where ((is_active = true) and (facility_id is not null))',
+      ],
+    },
+  });
+}
+
+async function verifyWorkforceSessionSchema(client: {
+  query<T extends Record<string, unknown>>(
+    text: string,
+    values?: unknown[],
+  ): Promise<{ rows: T[] }>;
+}) {
+  await assertTableExists(client, 'workforce_sessions');
+  await assertColumns(client, 'workforce_sessions', [
+    {
+      column_name: 'id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'uuidv7()',
+    },
+    {
+      column_name: 'actor_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'oidc_session_hash',
+      data_type: 'character(64)',
+      character_maximum_length: 64,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    ...['started_at', 'last_seen_at', 'absolute_expires_at'].map(
+      (column_name) => ({
+        column_name,
+        data_type: 'timestamp with time zone',
+        character_maximum_length: null,
+        is_nullable: 'NO' as const,
+        default_expr: null,
+      }),
+    ),
+    {
+      column_name: 'revoked_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'revocation_reason',
+      data_type: 'character varying(40)',
+      character_maximum_length: 40,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    ...['created_at', 'updated_at'].map((column_name) => ({
+      column_name,
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO' as const,
+      default_expr: 'now()',
+    })),
+  ]);
+  await assertConstraints(client, 'workforce_sessions', {
+    workforce_sessions_pkey: { type: 'p', columns: ['id'] },
+    workforce_sessions_actor_id_fkey: {
+      type: 'f',
+      columns: ['actor_id'],
+      definitionFragments: [
+        'references workforce_actors(id)',
+        'on delete restrict',
+      ],
+    },
+    workforce_sessions_actor_hash_key: {
+      type: 'u',
+      columns: ['actor_id', 'oidc_session_hash'],
+    },
+    workforce_sessions_hash_format_check: {
+      type: 'c',
+      columns: ['oidc_session_hash'],
+      definitionFragments: ["~ '^[0-9a-f]{64}$'::text"],
+    },
+    workforce_sessions_time_order_check: {
+      type: 'c',
+      columns: ['last_seen_at', 'started_at', 'absolute_expires_at'],
+      definitionFragments: [
+        'last_seen_at >= started_at',
+        'absolute_expires_at > started_at',
+        'last_seen_at <= absolute_expires_at',
+      ],
+    },
+    workforce_sessions_reason_check: {
+      type: 'c',
+      columns: ['revocation_reason'],
+      definitionFragments: [
+        'revocation_reason is null',
+        "'actor_deactivated'::character varying",
+        "'role_changed'::character varying",
+        "'facility_scope_changed'::character varying",
+        "'practitioner_state_changed'::character varying",
+        "'practitioner_assignment_changed'::character varying",
+        "'practitioner_binding_changed'::character varying",
+        "'manual_revocation'::character varying",
+      ],
+    },
+    workforce_sessions_revocation_state_check: {
+      type: 'c',
+      columns: ['revoked_at', 'revocation_reason'],
+      definitionFragments: [
+        'revoked_at is null',
+        'revocation_reason is null',
+        'revoked_at is not null',
+        'revocation_reason is not null',
+      ],
+    },
+  });
+  await assertIndexes(client, 'workforce_sessions', {
+    workforce_sessions_active_actor_idx: {
+      definitionFragments: ['(actor_id, id)', 'where (revoked_at is null)'],
+    },
+    workforce_sessions_expiry_idx: {
+      definitionFragments: ['(absolute_expires_at, id)'],
+    },
+  });
+}
+
 async function verifySchema() {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
@@ -1534,8 +1930,11 @@ async function verifySchema() {
       await verifyAssignmentSchema(client);
       await verifyAppointmentSchema(client);
       await verifyAppointmentReminderSchema(client);
+      await verifyWorkforceActorSchema(client);
+      await verifyWorkforceRoleAssignmentSchema(client);
+      await verifyWorkforceSessionSchema(client);
       console.log(
-        'Schema verification passed for healthcare_facilities, practitioners, patients, patient_facility_registrations, practitioner_facility_assignments, appointments, and appointment_reminders.',
+        'Schema verification passed for healthcare_facilities, practitioners, patients, patient_facility_registrations, practitioner_facility_assignments, appointments, appointment_reminders, workforce_actors, workforce_role_assignments, and workforce_sessions.',
       );
     } finally {
       client.release();

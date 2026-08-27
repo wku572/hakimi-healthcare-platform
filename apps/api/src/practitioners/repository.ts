@@ -10,6 +10,7 @@ import type {
   UpdatePractitionerInput,
   PractitionerAssignmentFacilitySummary,
 } from '@hakimi/shared';
+import type { DomainAuthorizationScope } from '../access/types.js';
 import type { Pool } from 'pg';
 import {
   createAssignmentConflictError,
@@ -241,9 +242,66 @@ function escapeLikePattern(value: string) {
   return value.replace(/[\\%_]/g, '\\$&');
 }
 
-function buildPractitionerFilterSql(query: PractitionerListQuery) {
+function buildPractitionerFilterSql(
+  query: PractitionerListQuery,
+  scope?: DomainAuthorizationScope,
+) {
   const clauses: string[] = [];
   const values: unknown[] = [];
+
+  if (scope && !scope.isPlatformAdmin) {
+    values.push(scope.actorId);
+    const actorParameter = `$${values.length}`;
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM workforce_actors scoped_actor
+      WHERE scoped_actor.id = ${actorParameter}
+        AND scoped_actor.is_active = true
+        AND (
+          (
+            scoped_actor.practitioner_id = practitioners.id
+            AND EXISTS (
+              SELECT 1
+              FROM workforce_role_assignments practitioner_role
+              WHERE practitioner_role.actor_id = scoped_actor.id
+                AND practitioner_role.role = 'PRACTITIONER'
+                AND practitioner_role.is_active = true
+            )
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM practitioner_facility_assignments target_assignment
+            JOIN healthcare_facilities shared_facility
+              ON shared_facility.id = target_assignment.facility_id
+             AND shared_facility.is_active = true
+            WHERE target_assignment.practitioner_id = practitioners.id
+              AND target_assignment.is_active = true
+              AND (
+                EXISTS (
+                  SELECT 1
+                  FROM workforce_role_assignments administrative_role
+                  WHERE administrative_role.actor_id = scoped_actor.id
+                    AND administrative_role.role IN ('FACILITY_ADMIN', 'SCHEDULER')
+                    AND administrative_role.facility_id = target_assignment.facility_id
+                    AND administrative_role.is_active = true
+                )
+                OR EXISTS (
+                  SELECT 1
+                  FROM workforce_role_assignments practitioner_role
+                  JOIN practitioner_facility_assignments own_assignment
+                    ON own_assignment.practitioner_id = scoped_actor.practitioner_id
+                   AND own_assignment.facility_id = target_assignment.facility_id
+                   AND own_assignment.is_active = true
+                  WHERE practitioner_role.actor_id = scoped_actor.id
+                    AND practitioner_role.role = 'PRACTITIONER'
+                    AND practitioner_role.is_active = true
+                )
+              )
+          )
+        )
+    )`);
+    clauses.push('practitioners.is_active = true');
+  }
 
   if (query.profession) {
     values.push(query.profession);
@@ -364,6 +422,7 @@ export type PractitionerRepository = {
   createPractitioner(input: CreatePractitionerInput): Promise<Practitioner>;
   listPractitioners(
     query: PractitionerListQuery,
+    scope?: DomainAuthorizationScope,
   ): Promise<PractitionerListResponse>;
   findPractitionerById(id: string): Promise<Practitioner | null>;
   updatePractitioner(
@@ -379,6 +438,7 @@ export type PractitionerRepository = {
   ): Promise<PractitionerFacilityAssignment>;
   listAssignments(
     practitionerId: string,
+    scope?: DomainAuthorizationScope,
     db?: DbExecutor,
   ): Promise<PractitionerAssignmentListResponse>;
   findAssignmentById(
@@ -465,8 +525,8 @@ export function createPractitionerRepository(
       }
     },
 
-    async listPractitioners(query) {
-      const { whereSql, values } = buildPractitionerFilterSql(query);
+    async listPractitioners(query, scope) {
+      const { whereSql, values } = buildPractitionerFilterSql(query, scope);
       const countResult = await db.query<{ total_items: number }>(
         `
           SELECT COUNT(*)::int AS total_items
@@ -534,14 +594,61 @@ export function createPractitionerRepository(
         )
         .join(', ');
       values.push(id);
+      const changesLifecycle = input.isActive !== undefined;
 
       try {
         const result = await db.query<PractitionerRow>(
           `
-            UPDATE practitioners
-            SET ${setSql}, updated_at = now()
-            WHERE id = $${values.length}
-            RETURNING ${PRACTITIONER_SELECT_COLUMNS}
+            WITH locked_actors AS MATERIALIZED (
+              SELECT actor.id
+              FROM workforce_actors actor
+              WHERE ${changesLifecycle ? 'true' : 'false'}
+                AND actor.practitioner_id = $${values.length}
+              ORDER BY actor.id
+              FOR UPDATE OF actor
+            ),
+            previous_practitioner AS MATERIALIZED (
+              SELECT practitioner.id, practitioner.is_active
+              FROM practitioners practitioner
+              LEFT JOIN locked_actors actor_lock_barrier ON false
+              WHERE practitioner.id = $${values.length}
+              FOR UPDATE OF practitioner
+            ),
+            updated_practitioner AS MATERIALIZED (
+              UPDATE practitioners practitioner
+              SET ${setSql}, updated_at = now()
+              FROM previous_practitioner previous
+              WHERE practitioner.id = previous.id
+              RETURNING
+                practitioner.id,
+                practitioner.code,
+                practitioner.first_name,
+                practitioner.middle_name,
+                practitioner.last_name,
+                practitioner.profession,
+                practitioner.license_number,
+                practitioner.phone,
+                practitioner.email,
+                practitioner.bio,
+                practitioner.is_active,
+                practitioner.created_at,
+                practitioner.updated_at,
+                previous.is_active AS previous_is_active
+            ),
+            authority_epoch AS (
+              UPDATE workforce_actors actor
+              SET activated_at = now(),
+                  updated_at = now()
+              FROM updated_practitioner practitioner
+              WHERE ${changesLifecycle ? 'true' : 'false'}
+                AND practitioner.is_active IS DISTINCT FROM practitioner.previous_is_active
+                AND actor.practitioner_id = practitioner.id
+                AND actor.is_active = true
+              RETURNING actor.id
+            )
+            SELECT ${PRACTITIONER_SELECT_COLUMNS},
+                   (SELECT COUNT(*) FROM authority_epoch) AS authority_epoch_count
+            FROM updated_practitioner
           `,
           values,
         );
@@ -556,11 +663,43 @@ export function createPractitionerRepository(
     async deletePractitioner(id) {
       const result = await db.query<{ id: string }>(
         `
-          UPDATE practitioners
-          SET is_active = false,
-              updated_at = now()
-          WHERE id = $1
-          RETURNING id
+          WITH locked_actors AS MATERIALIZED (
+            SELECT actor.id
+            FROM workforce_actors actor
+            WHERE actor.practitioner_id = $1
+            ORDER BY actor.id
+            FOR UPDATE OF actor
+          ),
+          previous_practitioner AS MATERIALIZED (
+            SELECT practitioner.id, practitioner.is_active
+            FROM practitioners practitioner
+            LEFT JOIN locked_actors actor_lock_barrier ON false
+            WHERE practitioner.id = $1
+            FOR UPDATE OF practitioner
+          ),
+          updated_practitioner AS MATERIALIZED (
+            UPDATE practitioners practitioner
+            SET is_active = false,
+                updated_at = now()
+            FROM previous_practitioner previous
+            WHERE practitioner.id = previous.id
+            RETURNING practitioner.id,
+                      practitioner.is_active,
+                      previous.is_active AS previous_is_active
+          ),
+          authority_epoch AS (
+            UPDATE workforce_actors actor
+            SET activated_at = now(),
+                updated_at = now()
+            FROM updated_practitioner practitioner
+            WHERE practitioner.is_active IS DISTINCT FROM practitioner.previous_is_active
+              AND actor.practitioner_id = practitioner.id
+              AND actor.is_active = true
+            RETURNING actor.id
+          )
+          SELECT id,
+                 (SELECT COUNT(*) FROM authority_epoch) AS authority_epoch_count
+          FROM updated_practitioner
         `,
         [id],
       );
@@ -593,16 +732,35 @@ export function createPractitionerRepository(
       try {
         const result = await executor.query<AssignmentRow>(
           `
-            INSERT INTO practitioner_facility_assignments (
-              practitioner_id,
-              facility_id,
-              role_title,
-              department,
-              is_primary,
-              is_active
+            WITH created_assignment AS MATERIALIZED (
+              INSERT INTO practitioner_facility_assignments (
+                practitioner_id,
+                facility_id,
+                role_title,
+                department,
+                is_primary,
+                is_active
+              )
+              VALUES ($1, $2, $3, $4, $5, $6)
+              RETURNING id, practitioner_id, is_active
+            ),
+            authority_epoch AS (
+              UPDATE workforce_role_assignments role
+              SET activated_at = now(),
+                  updated_at = now()
+              FROM workforce_actors actor,
+                   created_assignment assignment
+              WHERE assignment.is_active = true
+                AND actor.practitioner_id = assignment.practitioner_id
+                AND role.actor_id = actor.id
+                AND role.role = 'PRACTITIONER'
+                AND role.facility_id IS NULL
+                AND role.is_active = true
+              RETURNING role.id
             )
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id
+            SELECT id,
+                   (SELECT COUNT(*) FROM authority_epoch) AS authority_epoch_count
+            FROM created_assignment
           `,
           [
             practitionerId,
@@ -636,16 +794,53 @@ export function createPractitionerRepository(
       }
     },
 
-    async listAssignments(practitionerId, executor = db) {
+    async listAssignments(practitionerId, scope, executor = db) {
+      const values: unknown[] = [practitionerId];
+      let scopeSql = '';
+
+      if (scope && !scope.isPlatformAdmin) {
+        values.push(scope.actorId);
+        scopeSql = `AND EXISTS (
+          SELECT 1
+          FROM workforce_actors scoped_actor
+          WHERE scoped_actor.id = $2
+            AND scoped_actor.is_active = true
+            AND (
+              (
+                scoped_actor.practitioner_id = a.practitioner_id
+                AND EXISTS (
+                  SELECT 1
+                  FROM workforce_role_assignments practitioner_role
+                  WHERE practitioner_role.actor_id = scoped_actor.id
+                    AND practitioner_role.role = 'PRACTITIONER'
+                    AND practitioner_role.is_active = true
+                )
+              )
+              OR EXISTS (
+                SELECT 1
+                FROM workforce_role_assignments administrative_role
+                JOIN healthcare_facilities scoped_facility
+                  ON scoped_facility.id = administrative_role.facility_id
+                 AND scoped_facility.is_active = true
+                WHERE administrative_role.actor_id = scoped_actor.id
+                  AND administrative_role.role IN ('FACILITY_ADMIN', 'SCHEDULER')
+                  AND administrative_role.facility_id = a.facility_id
+                  AND administrative_role.is_active = true
+              )
+            )
+        )`;
+      }
+
       const result = await executor.query<AssignmentRow>(
         `
           SELECT ${ASSIGNMENT_SELECT_COLUMNS}
           FROM practitioner_facility_assignments a
           JOIN healthcare_facilities f ON f.id = a.facility_id
           WHERE a.practitioner_id = $1
+            ${scopeSql}
           ORDER BY a.is_primary DESC, a.created_at ASC, a.id ASC
         `,
-        [practitionerId],
+        values,
       );
 
       return {
@@ -686,11 +881,40 @@ export function createPractitionerRepository(
       try {
         const result = await executor.query<{ id: string }>(
           `
-            UPDATE practitioner_facility_assignments
-            SET ${setSql}, updated_at = now()
-            WHERE practitioner_id = $${values.length - 1}
-              AND id = $${values.length}
-            RETURNING id
+            WITH previous_assignment AS MATERIALIZED (
+              SELECT id, is_active
+              FROM practitioner_facility_assignments
+              WHERE practitioner_id = $${values.length - 1}
+                AND id = $${values.length}
+              FOR UPDATE
+            ),
+            updated_assignment AS MATERIALIZED (
+              UPDATE practitioner_facility_assignments assignment
+              SET ${setSql}, updated_at = now()
+              FROM previous_assignment previous
+              WHERE assignment.id = previous.id
+              RETURNING assignment.id,
+                        assignment.practitioner_id,
+                        assignment.is_active,
+                        previous.is_active AS previous_is_active
+            ),
+            authority_epoch AS (
+              UPDATE workforce_role_assignments role
+              SET activated_at = now(),
+                  updated_at = now()
+              FROM workforce_actors actor,
+                   updated_assignment assignment
+              WHERE assignment.is_active IS DISTINCT FROM assignment.previous_is_active
+                AND actor.practitioner_id = assignment.practitioner_id
+                AND role.actor_id = actor.id
+                AND role.role = 'PRACTITIONER'
+                AND role.facility_id IS NULL
+                AND role.is_active = true
+              RETURNING role.id
+            )
+            SELECT id,
+                   (SELECT COUNT(*) FROM authority_epoch) AS authority_epoch_count
+            FROM updated_assignment
           `,
           values,
         );
@@ -720,13 +944,42 @@ export function createPractitionerRepository(
     async deleteAssignment(practitionerId, assignmentId, executor = db) {
       const result = await executor.query<{ id: string }>(
         `
-          UPDATE practitioner_facility_assignments
-          SET is_active = false,
-              is_primary = false,
-              updated_at = now()
-          WHERE practitioner_id = $1
-            AND id = $2
-          RETURNING id
+          WITH previous_assignment AS MATERIALIZED (
+            SELECT id, is_active
+            FROM practitioner_facility_assignments
+            WHERE practitioner_id = $1
+              AND id = $2
+            FOR UPDATE
+          ),
+          updated_assignment AS MATERIALIZED (
+            UPDATE practitioner_facility_assignments assignment
+            SET is_active = false,
+                is_primary = false,
+                updated_at = now()
+            FROM previous_assignment previous
+            WHERE assignment.id = previous.id
+            RETURNING assignment.id,
+                      assignment.practitioner_id,
+                      assignment.is_active,
+                      previous.is_active AS previous_is_active
+          ),
+          authority_epoch AS (
+            UPDATE workforce_role_assignments role
+            SET activated_at = now(),
+                updated_at = now()
+            FROM workforce_actors actor,
+                 updated_assignment assignment
+            WHERE assignment.is_active IS DISTINCT FROM assignment.previous_is_active
+              AND actor.practitioner_id = assignment.practitioner_id
+              AND role.actor_id = actor.id
+              AND role.role = 'PRACTITIONER'
+              AND role.facility_id IS NULL
+              AND role.is_active = true
+            RETURNING role.id
+          )
+          SELECT id,
+                 (SELECT COUNT(*) FROM authority_epoch) AS authority_epoch_count
+          FROM updated_assignment
         `,
         [practitionerId, assignmentId],
       );

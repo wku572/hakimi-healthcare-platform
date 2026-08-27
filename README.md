@@ -44,6 +44,12 @@ The API expects:
 - `POSTGRES_PASSWORD`
 - `DATABASE_URL`
 - `LOG_LEVEL`
+- `OIDC_ISSUER`
+- `OIDC_AUDIENCE`
+- `OIDC_JWKS_URI`
+- `OIDC_ALLOWED_ALGORITHMS`
+- `OIDC_REQUIRED_ACR_VALUES`
+- `OIDC_CLOCK_TOLERANCE_SECONDS`
 - `REMINDER_WORKER_ID`
 - `REMINDER_POLL_INTERVAL_MS`
 - `REMINDER_BATCH_SIZE`
@@ -159,9 +165,40 @@ Rollback warning:
 
 Production limits:
 
-- Authentication and authorization are not implemented yet.
+- Sprint 15 implements a workforce-only OIDC resource-server and server-derived access-control baseline for synthetic data.
+- Production deployment, real patient-data processing, patient accounts, login, recovery, and HTTP role administration are not authorized.
 - Do not bake secrets into the image or commit production credentials.
 - Use environment injection or an external secret manager in real deployments.
+
+## Workforce Access Control
+
+The 24 `/api/v1` operations require a short-lived OIDC bearer access token. The API validates an asymmetric signature, exact issuer and audience, bounded token age, approved workforce MFA `acr`, and required OIDC session claims. The two health operations remain public.
+
+Authorization is default deny. Tokens identify an issuer, subject, and identity-provider session only; they never supply roles, facility scopes, practitioner links, activation state, or revocation state. The API derives that immutable context from the Sprint 15 PostgreSQL authority tables on every request:
+
+- `workforce_actors`
+- `workforce_role_assignments`
+- `workforce_sessions`
+
+The approved workforce roles are `PLATFORM_ADMIN`, `FACILITY_ADMIN`, `SCHEDULER`, `PRACTITIONER`, and `OPERATIONS_OPERATOR`. No `PATIENT` role can be provisioned. `DELETE /api/v1/patients/:patientId` remains policy-blocked, and practitioners cannot access standalone patient records pending the unresolved appointment-policy decision.
+
+All Sprint 15 use is limited to fictional, synthetic records. The implementation does not authorize production deployment or processing of real patient data.
+
+### Controlled Provisioning
+
+Workforce authority is managed only through the local non-HTTP command:
+
+```bash
+npm run access:provision
+```
+
+The command accepts no sensitive command-line arguments. In an interactive terminal it reads one strict JSON command without echoing the payload. Supported authority actions are `PROVISION_ACTOR`, `ACTIVATE_ACTOR`, `DEACTIVATE_ACTOR`, `REVOKE_SESSIONS`, `BIND_PRACTITIONER`, `ASSIGN_ROLE`, and `DEACTIVATE_ROLE`. The idempotent recovery actions `REVOKE_FACILITY_SESSIONS`, `REVOKE_PRACTITIONER_SESSIONS`, and `REVOKE_ASSIGNMENT_SESSIONS` retry only the required session revocation after a committed lifecycle change; they do not replay the facility, practitioner, or assignment mutation. Every action runs in one PostgreSQL transaction, uses lifecycle updates rather than hard deletion, and emits only an opaque result event with an aggregate affected-row count.
+
+The final authorization transaction locks the actor and exact target resources, revalidates the operation-specific grant and current resource state, and updates session activity only when that same target grant remains valid. Dedicated `workforce_actors.activated_at` and `workforce_role_assignments.activated_at` epochs advance atomically when a lifecycle transition expands or removes scope. An epoch newer than the OIDC authentication time remains unavailable to the existing identity until revocation and reauthentication complete. General facility, practitioner, and assignment `updated_at` audit timestamps are never used as authorization evidence, so ordinary profile and descriptive edits do not require reauthentication.
+
+On Windows, use the interactive terminal path. On POSIX systems only, noninteractive input must come from a regular permission-restricted file on an encrypted local temporary volume; pipes are rejected. Never place provisioning payloads in source control, shell history, synchronized folders, tickets, or logs. This controlled command is not a role-administration API and does not define a production identity-management workflow.
+
+Authentication failures return generic `401 AUTHENTICATION_REQUIRED` with `WWW-Authenticate: Bearer`. Insufficient grants return generic `403 FORBIDDEN`; absent and out-of-scope resources use the operation's privacy-preserving `404` envelope. These responses never disclose token, claim, role, scope, session, SQL, or patient details.
 
 ## Migrations
 
@@ -212,7 +249,7 @@ Validation and normalization rules:
 - Blank optional strings become `null`.
 - `DELETE` does not remove rows from PostgreSQL.
 - Reactivation happens through `PATCH /api/v1/facilities/:id` with `isActive: true`.
-- Authentication and authorization are not implemented yet.
+- Workforce operations require the Sprint 15 OIDC and server-derived authorization boundary described above.
 
 Create and update accept these fields:
 
@@ -609,10 +646,11 @@ Warning: `docker compose down --volumes` deletes the local PostgreSQL data volum
 - the `practitioner_facility_assignments` table exists with foreign keys, the duplicate-assignment unique constraint, and the partial unique index that enforces one active primary assignment per practitioner
 - the `appointments` table includes `schedule_version` and the reminder-related check constraint
 - the `appointment_reminders` table exists with bounded string columns, state checks, unique keys, and processing indexes
+- the workforce actor, role-assignment, and session tables include their bounded columns, lifecycle checks, restrictive foreign keys, unique authority indexes, and active-session indexes
 
 ## Notes
 
 - Do not commit secrets.
 - Keep the repository strict, typed, and workspace-aware.
 - DevOps infrastructure is intentionally empty for now.
-- Authentication and authorization are not implemented yet.
+- Workforce access control is synthetic-data-only; patient authentication and production authorization remain excluded.

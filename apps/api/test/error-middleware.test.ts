@@ -6,6 +6,10 @@ import {
 } from '../src/http/api-error.js';
 import { createApp } from '../src/app.js';
 import { createPatientsRouter } from '../src/patients/router.js';
+import {
+  allowAllAccessMiddleware,
+  allowAllRouteAuthorizer,
+} from './helpers/access.js';
 import type { PatientService } from '../src/patients/service.js';
 import type { ObservabilityLogger } from '../src/observability/logger.js';
 
@@ -33,7 +37,8 @@ function createTestApp(
 ) {
   return {
     app: createApp({
-      patientsRouter: createPatientsRouter(service),
+      patientsRouter: createPatientsRouter(service, allowAllRouteAuthorizer),
+      accessAuthenticationMiddleware: allowAllAccessMiddleware,
       logger,
     }),
     service,

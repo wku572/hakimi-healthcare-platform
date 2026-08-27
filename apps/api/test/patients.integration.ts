@@ -10,6 +10,10 @@ import { loadEnvironment } from '../src/env.js';
 import { createHealthcareFacilitiesModule } from '../src/facilities/module.js';
 import { createPatientsModule } from '../src/patients/module.js';
 import { runMigrationCommand } from '../src/migrations/runner.js';
+import {
+  allowAllAccessMiddleware,
+  allowAllRouteAuthorizer,
+} from './helpers/access.js';
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('test:integration:db refuses to run in production.');
@@ -61,12 +65,16 @@ describe.sequential('PostgreSQL patient integration', () => {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
   const readinessCheck = createDatabaseReadinessCheck(pool);
-  const facilitiesModule = createHealthcareFacilitiesModule(pool);
-  const patientsModule = createPatientsModule(pool);
+  const facilitiesModule = createHealthcareFacilitiesModule(
+    pool,
+    allowAllRouteAuthorizer,
+  );
+  const patientsModule = createPatientsModule(pool, allowAllRouteAuthorizer);
   const app = createApp({
     readinessCheck,
     facilitiesRouter: facilitiesModule.router,
     patientsRouter: patientsModule.router,
+    accessAuthenticationMiddleware: allowAllAccessMiddleware,
   });
 
   beforeAll(async () => {

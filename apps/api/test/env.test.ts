@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadEnvironment } from '../src/env.js';
+import { loadAccessEnvironment, loadEnvironment } from '../src/env.js';
 import { loadReminderWorkerConfig } from '../src/reminders/config.js';
 
 const injectedEnvironment = {
@@ -9,6 +9,16 @@ const injectedEnvironment = {
   POSTGRES_USER: 'hakimi_prod',
   POSTGRES_PASSWORD: 'change-me',
   DATABASE_URL: 'postgresql://hakimi_prod:change-me@postgres:5432/hakimi_prod',
+};
+
+const accessEnvironment = {
+  ...injectedEnvironment,
+  OIDC_ISSUER: 'https://identity.example.test/workforce',
+  OIDC_AUDIENCE: 'hakimi-api',
+  OIDC_JWKS_URI: 'https://identity.example.test/.well-known/jwks.json',
+  OIDC_ALLOWED_ALGORITHMS: 'RS256,ES256',
+  OIDC_REQUIRED_ACR_VALUES: 'workforce-mfa,hardware-key',
+  OIDC_CLOCK_TOLERANCE_SECONDS: '5',
 };
 
 describe('environment loaders', () => {
@@ -129,5 +139,40 @@ describe('environment loaders', () => {
         {},
       ),
     ).toThrow(/Invalid reminder worker configuration/i);
+  });
+
+  it('loads strict workforce OIDC resource-server configuration', () => {
+    expect(loadAccessEnvironment(accessEnvironment, {})).toMatchObject({
+      OIDC_ISSUER: 'https://identity.example.test/workforce',
+      OIDC_AUDIENCE: 'hakimi-api',
+      OIDC_JWKS_URI: 'https://identity.example.test/.well-known/jwks.json',
+      OIDC_ALLOWED_ALGORITHMS: ['RS256', 'ES256'],
+      OIDC_REQUIRED_ACR_VALUES: ['workforce-mfa', 'hardware-key'],
+      OIDC_CLOCK_TOLERANCE_SECONDS: 5,
+    });
+  });
+
+  it('rejects unsafe, ambiguous, or incomplete OIDC configuration', () => {
+    expect(() =>
+      loadAccessEnvironment(
+        {
+          ...accessEnvironment,
+          OIDC_JWKS_URI: 'http://identity.example.test/jwks',
+        },
+        {},
+      ),
+    ).toThrow(/OIDC_JWKS_URI must use HTTPS/i);
+    expect(() =>
+      loadAccessEnvironment(
+        { ...accessEnvironment, OIDC_ALLOWED_ALGORITHMS: 'RS256,RS256' },
+        {},
+      ),
+    ).toThrow(/unique comma-separated subset/i);
+    expect(() =>
+      loadAccessEnvironment(
+        { ...accessEnvironment, OIDC_REQUIRED_ACR_VALUES: '' },
+        {},
+      ),
+    ).toThrow(/Invalid environment configuration/i);
   });
 });

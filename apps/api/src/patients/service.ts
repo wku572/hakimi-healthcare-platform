@@ -6,6 +6,7 @@ import type {
   PatientListResponse,
   UpdatePatientInput,
 } from '@hakimi/shared';
+import type { DomainAuthorizationScope } from '../access/types.js';
 import {
   createFacilityInactiveError,
   createFacilityNotFoundError,
@@ -15,9 +16,19 @@ import type { PatientRepository, PatientRow } from './repository.js';
 
 export type PatientService = {
   createPatient(input: CreatePatientInput): Promise<Patient>;
-  listPatients(query: PatientListQuery): Promise<PatientListResponse>;
-  getPatientById(id: string): Promise<Patient>;
-  updatePatient(id: string, input: UpdatePatientInput): Promise<Patient>;
+  listPatients(
+    query: PatientListQuery,
+    scope?: DomainAuthorizationScope,
+  ): Promise<PatientListResponse>;
+  getPatientById(
+    id: string,
+    scope?: DomainAuthorizationScope,
+  ): Promise<Patient>;
+  updatePatient(
+    id: string,
+    input: UpdatePatientInput,
+    scope?: DomainAuthorizationScope,
+  ): Promise<Patient>;
   deletePatient(id: string): Promise<void>;
 };
 
@@ -145,10 +156,12 @@ async function hydratePatient(
   repository: PatientRepository,
   patient: PatientRow,
   db?: Parameters<PatientRepository['findRegistrationsByPatientId']>[1],
+  scope?: DomainAuthorizationScope,
 ) {
   const registrations = await repository.findRegistrationsByPatientId(
     patient.id,
     db,
+    scope,
   );
 
   return mapPatient(patient, registrations);
@@ -158,11 +171,13 @@ async function hydratePatients(
   repository: PatientRepository,
   patients: PatientRow[],
   db?: Parameters<PatientRepository['findRegistrationsByPatientIds']>[1],
+  scope?: DomainAuthorizationScope,
 ): Promise<Patient[]> {
   const registrationsByPatientId =
     await repository.findRegistrationsByPatientIds(
       patients.map((patient) => patient.id),
       db,
+      scope,
     );
 
   return patients.map((patient) =>
@@ -211,9 +226,14 @@ export function createPatientService(
       });
     },
 
-    async listPatients(query) {
-      const result = await repository.listPatients(query);
-      const data = await hydratePatients(repository, result.rows);
+    async listPatients(query, scope) {
+      const result = await repository.listPatients(query, scope);
+      const data = await hydratePatients(
+        repository,
+        result.rows,
+        undefined,
+        scope,
+      );
 
       return {
         data,
@@ -221,17 +241,17 @@ export function createPatientService(
       };
     },
 
-    async getPatientById(id) {
+    async getPatientById(id, scope) {
       const patient = await repository.findPatientById(id);
 
       if (!patient) {
         throw createPatientNotFoundError();
       }
 
-      return hydratePatient(repository, patient);
+      return hydratePatient(repository, patient, undefined, scope);
     },
 
-    async updatePatient(id, input) {
+    async updatePatient(id, input, scope) {
       const normalized = normalizeUpdateInput(input);
       const patient = await repository.updatePatient(id, normalized);
 
@@ -239,7 +259,7 @@ export function createPatientService(
         throw createPatientNotFoundError();
       }
 
-      return hydratePatient(repository, patient);
+      return hydratePatient(repository, patient, undefined, scope);
     },
 
     async deletePatient(id) {

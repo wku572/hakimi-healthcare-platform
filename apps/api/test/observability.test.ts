@@ -18,6 +18,7 @@ import {
   isValidRequestId,
   normalizeRouteTemplate,
 } from '../src/http/request-observability.js';
+import { allowAllAccessMiddleware } from './helpers/access.js';
 
 const validRequestId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
@@ -119,6 +120,7 @@ describe('request observability', () => {
     const app = createApp({
       logger: recording.logger,
       patientsRouter: router,
+      accessAuthenticationMiddleware: allowAllAccessMiddleware,
     });
 
     const malformed = await request(app)

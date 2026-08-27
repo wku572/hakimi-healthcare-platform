@@ -6,6 +6,7 @@ import type {
   CreateAppointmentInput,
   UpdateAppointmentInput,
 } from '@hakimi/shared';
+import type { DomainAuthorizationScope } from '../access/types.js';
 import {
   createAppointmentConflictError,
   createAppointmentNotFoundError,
@@ -28,6 +29,7 @@ export type AppointmentService = {
   createAppointment(input: CreateAppointmentInput): Promise<Appointment>;
   listAppointments(
     query: AppointmentListQuery,
+    scope?: DomainAuthorizationScope,
   ): Promise<AppointmentListResponse>;
   getAppointmentById(id: string): Promise<Appointment>;
   updateAppointment(
@@ -278,8 +280,8 @@ export function createAppointmentService(
       });
     },
 
-    async listAppointments(query) {
-      const result = await repository.listAppointments(query);
+    async listAppointments(query, scope) {
+      const result = await repository.listAppointments(query, scope);
 
       return {
         data: result.rows,

@@ -12,6 +12,10 @@ import { createHealthcareFacilitiesModule } from '../src/facilities/module.js';
 import { createPatientsModule } from '../src/patients/module.js';
 import { createPractitionersModule } from '../src/practitioners/module.js';
 import { runMigrationCommand } from '../src/migrations/runner.js';
+import {
+  allowAllAccessMiddleware,
+  allowAllRouteAuthorizer,
+} from './helpers/access.js';
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('test:integration:db refuses to run in production.');
@@ -114,16 +118,26 @@ describe.sequential('PostgreSQL appointment integration', () => {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
   const readinessCheck = createDatabaseReadinessCheck(pool);
-  const facilitiesModule = createHealthcareFacilitiesModule(pool);
-  const practitionersModule = createPractitionersModule(pool);
-  const patientsModule = createPatientsModule(pool);
-  const appointmentsModule = createAppointmentsModule(pool);
+  const facilitiesModule = createHealthcareFacilitiesModule(
+    pool,
+    allowAllRouteAuthorizer,
+  );
+  const practitionersModule = createPractitionersModule(
+    pool,
+    allowAllRouteAuthorizer,
+  );
+  const patientsModule = createPatientsModule(pool, allowAllRouteAuthorizer);
+  const appointmentsModule = createAppointmentsModule(
+    pool,
+    allowAllRouteAuthorizer,
+  );
   const app = createApp({
     readinessCheck,
     facilitiesRouter: facilitiesModule.router,
     practitionersRouter: practitionersModule.router,
     patientsRouter: patientsModule.router,
     appointmentsRouter: appointmentsModule.router,
+    accessAuthenticationMiddleware: allowAllAccessMiddleware,
   });
 
   beforeAll(async () => {

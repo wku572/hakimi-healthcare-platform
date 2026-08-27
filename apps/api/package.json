@@ -11,12 +11,14 @@
     "migrate": "tsx src/migrate.ts",
     "schema:verify": "tsx src/schema-verify.ts",
     "docs:validate": "npx redocly lint openapi.yaml",
+    "access:provision": "tsx src/access/provision.ts",
     "test:integration:db": "vitest run --config vitest.integration.config.ts",
     "worker:reminders": "tsx src/reminders/worker.ts"
   },
   "dependencies": {
     "dotenv": "^17.0.0",
     "express": "^5.0.0",
+    "jose": "^6.2.10",
     "pg": "^8.23.0",
     "zod": "^4.0.0"
   },

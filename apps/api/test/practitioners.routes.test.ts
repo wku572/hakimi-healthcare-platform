@@ -11,6 +11,11 @@ import {
 } from '../src/http/api-error.js';
 import { createApp } from '../src/app.js';
 import { createPractitionersRouter } from '../src/practitioners/router.js';
+import {
+  allowAllAccessMiddleware,
+  allowAllRouteAuthorizer,
+  allowAllScope,
+} from './helpers/access.js';
 import type { PractitionerService } from '../src/practitioners/service.js';
 
 function createPractitionerServiceMock(): Mocked<PractitionerService> {
@@ -30,7 +35,11 @@ function createPractitionerServiceMock(): Mocked<PractitionerService> {
 function createTestApp(service = createPractitionerServiceMock()) {
   return {
     app: createApp({
-      practitionersRouter: createPractitionersRouter(service),
+      practitionersRouter: createPractitionersRouter(
+        service,
+        allowAllRouteAuthorizer,
+      ),
+      accessAuthenticationMiddleware: allowAllAccessMiddleware,
     }),
     service,
   };
@@ -213,10 +222,10 @@ describe('practitioner routes', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(listResponse);
-    expect(service.listPractitioners).toHaveBeenCalledWith({
-      page: 1,
-      pageSize: 20,
-    });
+    expect(service.listPractitioners).toHaveBeenCalledWith(
+      { page: 1, pageSize: 20 },
+      allowAllScope,
+    );
   });
 
   it('rejects repeated list query values', async () => {
@@ -444,7 +453,10 @@ describe('practitioner routes', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(assignmentListResponse);
-    expect(service.listAssignments).toHaveBeenCalledWith(practitionerId);
+    expect(service.listAssignments).toHaveBeenCalledWith(
+      practitionerId,
+      allowAllScope,
+    );
   });
 
   it('returns 404 when assignment ownership does not match', async () => {

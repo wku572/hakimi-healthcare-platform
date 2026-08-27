@@ -5,6 +5,7 @@ import type {
   HealthcareFacilityListResponse,
   UpdateHealthcareFacilityInput,
 } from '@hakimi/shared';
+import type { DomainAuthorizationScope } from '../access/types.js';
 import { createNotFoundError } from '../http/api-error.js';
 import type { HealthcareFacilityRepository } from './repository.js';
 
@@ -14,6 +15,7 @@ export type HealthcareFacilityService = {
   ): Promise<HealthcareFacility>;
   listFacilities(
     query: HealthcareFacilityListQuery,
+    scope?: DomainAuthorizationScope,
   ): Promise<HealthcareFacilityListResponse>;
   getFacilityById(id: string): Promise<HealthcareFacility>;
   updateFacility(
@@ -118,8 +120,8 @@ export function createHealthcareFacilityService(
     async createFacility(input) {
       return repository.create(normalizeCreateInput(input));
     },
-    async listFacilities(query) {
-      return repository.list(query);
+    async listFacilities(query, scope) {
+      return repository.list(query, scope);
     },
     async getFacilityById(id) {
       const facility = await repository.findById(id);

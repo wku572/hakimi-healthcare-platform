@@ -12,6 +12,11 @@ export const OBSERVABILITY_EVENT_CODES = {
   apiShutdownCompleted: 'API_SHUTDOWN_COMPLETED',
   apiShutdownFailed: 'API_SHUTDOWN_FAILED',
   databasePoolError: 'DATABASE_POOL_ERROR',
+  authenticationRejected: 'AUTHENTICATION_REJECTED',
+  authorizationDenied: 'AUTHORIZATION_DENIED',
+  accessRevocationFailed: 'ACCESS_REVOCATION_FAILED',
+  accessProvisioningCompleted: 'ACCESS_PROVISIONING_COMPLETED',
+  accessProvisioningFailed: 'ACCESS_PROVISIONING_FAILED',
   reminderWorkerStarted: 'REMINDER_WORKER_STARTED',
   reminderWorkerFailed: 'REMINDER_WORKER_FAILED',
   reminderCycleCompleted: 'REMINDER_CYCLE_COMPLETED',
@@ -44,6 +49,7 @@ export type SafeLogFields = Partial<{
   retriedCount: number;
   deadLetteredCount: number;
   skippedCount: number;
+  affectedCount: number;
 }>;
 
 export type ObservabilityLogger = {
@@ -87,6 +93,7 @@ const SAFE_FIELD_NAMES = [
   'retriedCount',
   'deadLetteredCount',
   'skippedCount',
+  'affectedCount',
 ] as const satisfies ReadonlyArray<keyof SafeLogFields>;
 
 const UUID_V4_PATTERN =

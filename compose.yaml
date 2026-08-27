@@ -66,6 +66,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-development-only}
       DATABASE_URL: 'postgresql://${POSTGRES_USER:-hakimi_dev}:${POSTGRES_PASSWORD:-change-me-development-only}@postgres:5432/${POSTGRES_DB:-hakimi_dev}'
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      OIDC_ISSUER: ${OIDC_ISSUER:-https://identity.example/realms/hakimi-workforce}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-hakimi-api}
+      OIDC_JWKS_URI: ${OIDC_JWKS_URI:-https://identity.example/realms/hakimi-workforce/protocol/openid-connect/certs}
+      OIDC_ALLOWED_ALGORITHMS: ${OIDC_ALLOWED_ALGORITHMS:-RS256}
+      OIDC_REQUIRED_ACR_VALUES: ${OIDC_REQUIRED_ACR_VALUES:-workforce-mfa}
+      OIDC_CLOCK_TOLERANCE_SECONDS: ${OIDC_CLOCK_TOLERANCE_SECONDS:-30}
     command: ['node', 'server.js']
     healthcheck:
       test:

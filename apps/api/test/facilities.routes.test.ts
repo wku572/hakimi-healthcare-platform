@@ -7,6 +7,11 @@ import {
 } from '../src/http/api-error.js';
 import { createApp } from '../src/app.js';
 import { createFacilitiesRouter } from '../src/facilities/router.js';
+import {
+  allowAllAccessMiddleware,
+  allowAllRouteAuthorizer,
+  allowAllScope,
+} from './helpers/access.js';
 import type { HealthcareFacilityService } from '../src/facilities/service.js';
 
 function createFacilityServiceMock(): Mocked<HealthcareFacilityService> {
@@ -22,7 +27,11 @@ function createFacilityServiceMock(): Mocked<HealthcareFacilityService> {
 function createTestApp(service = createFacilityServiceMock()) {
   return {
     app: createApp({
-      facilitiesRouter: createFacilitiesRouter(service),
+      facilitiesRouter: createFacilitiesRouter(
+        service,
+        allowAllRouteAuthorizer,
+      ),
+      accessAuthenticationMiddleware: allowAllAccessMiddleware,
     }),
     service,
   };
@@ -188,10 +197,10 @@ describe('facility routes', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(listResponse);
-    expect(service.listFacilities).toHaveBeenCalledWith({
-      page: 1,
-      pageSize: 20,
-    });
+    expect(service.listFacilities).toHaveBeenCalledWith(
+      { page: 1, pageSize: 20 },
+      allowAllScope,
+    );
   });
 
   it('rejects repeated list query values', async () => {
