@@ -14,6 +14,7 @@ This directory contains the product baseline package for Hakimi / ሀኪሜ.
 - [ACCESS_CONTROL_BASELINE.md](./ACCESS_CONTROL_BASELINE.md) - accountable approved-with-revisions workforce identity and access-control baseline, authoritative-state constraints, and production gate
 - [SPRINT_15_IMPLEMENTATION_SPEC.md](./SPRINT_15_IMPLEMENTATION_SPEC.md) - implemented workforce persistence, OIDC resource-server, provisioning, authorization, and synthetic-test boundary
 - [PRODUCTION_READINESS_GOVERNANCE.md](./PRODUCTION_READINESS_GOVERNANCE.md) - proposed Sprint 16 privacy, audit, retention, patient-identity, legal-review, operational-ownership, and production-gate decisions
+- [OPEN10_HYPOTHETICAL_OPERATING_MODEL.md](./OPEN10_HYPOTHETICAL_OPERATING_MODEL.md) - hypothetical synthetic-data-only operating-model and data-flow evidence pack for qualified `OPEN-10` review
 - [OPERATIONS_RUNBOOK.md](./OPERATIONS_RUNBOOK.md) - privacy-safe runtime event catalogue and diagnostic procedures
 
 ## Validation
