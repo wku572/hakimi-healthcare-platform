@@ -12,7 +12,8 @@ This directory contains the product baseline package for Hakimi / ሀኪሜ.
 - [OPEN_DECISIONS.md](./OPEN_DECISIONS.md) - unresolved stakeholder questions that remain explicitly open
 - [TRACEABILITY.md](./TRACEABILITY.md) - operation-level mapping from API surface to requirements and tests
 - [ACCESS_CONTROL_BASELINE.md](./ACCESS_CONTROL_BASELINE.md) - accountable approved-with-revisions workforce identity and access-control baseline, authoritative-state constraints, and production gate
-- [SPRINT_15_IMPLEMENTATION_SPEC.md](./SPRINT_15_IMPLEMENTATION_SPEC.md) - proposed workforce persistence, OIDC resource-server, provisioning, authorization, and synthetic-test implementation boundary
+- [SPRINT_15_IMPLEMENTATION_SPEC.md](./SPRINT_15_IMPLEMENTATION_SPEC.md) - implemented workforce persistence, OIDC resource-server, provisioning, authorization, and synthetic-test boundary
+- [PRODUCTION_READINESS_GOVERNANCE.md](./PRODUCTION_READINESS_GOVERNANCE.md) - proposed Sprint 16 privacy, audit, retention, patient-identity, legal-review, operational-ownership, and production-gate decisions
 - [OPERATIONS_RUNBOOK.md](./OPERATIONS_RUNBOOK.md) - privacy-safe runtime event catalogue and diagnostic procedures
 
 ## Validation
@@ -23,4 +24,4 @@ Run the read-only baseline validator from the repository root:
 node scripts/validate-product-baseline.mjs
 ```
 
-The validator checks the canonical register, internal documentation links, and API traceability coverage.
+The validator checks the canonical register, internal documentation links, and API traceability coverage. Sprint-specific matrix reconciliation and documentation-only scope are also reviewed with the procedures documented in the applicable governance package.
