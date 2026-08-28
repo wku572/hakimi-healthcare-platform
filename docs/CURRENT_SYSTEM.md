@@ -38,6 +38,8 @@ This file records the current repository state as an as-built snapshot.
 - Sprint 15 implements the approved synthetic-data-only workforce OIDC resource-server, default-deny operation and field policy, server-derived authorization context, facility isolation, local session activity, and privacy-preserving denial boundary. It does not authorize production or real patient-data processing, and patient-facing capabilities remain blocked.
 - Migration 006 persists authoritative workforce actors, role assignments, facility scopes, practitioner bindings, activation state, revocation state, and local sessions. Controlled provisioning is non-HTTP and accepts no sensitive command-line arguments.
 - All 24 `/api/v1` operations require workforce authentication; the two health operations remain public. `DELETE /api/v1/patients/:patientId` remains authorization-blocked, and practitioner access to standalone patient records remains blocked pending `OPEN-09`.
+- No durable security or clinical audit store, retention schedule, patient-link or merge workflow, legal applicability determination, production deployment target, or accepted operational RACI exists.
+- Current records and tests use synthetic data only. Sprint 15 implementation does not authorize production deployment or processing of real patient data.
 
 ## Current Documentation Posture
 
@@ -46,3 +48,4 @@ This file records the current repository state as an as-built snapshot.
 - [DECISIONS.md](./DECISIONS.md) and [OPEN_DECISIONS.md](./OPEN_DECISIONS.md) keep unresolved policy questions visible.
 - [ACCESS_CONTROL_BASELINE.md](./ACCESS_CONTROL_BASELINE.md) records the accountable approval for `OPEN-03`, `OPEN-04`, and `OPEN-05`, their blocked patient-facing remainder, the synthetic-data-only boundary, and the bounded Sprint 15 constraints.
 - [SPRINT_15_IMPLEMENTATION_SPEC.md](./SPRINT_15_IMPLEMENTATION_SPEC.md) is the binding persistence, OIDC resource-server, provisioning, authorization, and synthetic-test specification implemented by Sprint 15.
+- [PRODUCTION_READINESS_GOVERNANCE.md](./PRODUCTION_READINESS_GOVERNANCE.md) is the `PROPOSED FOR REVIEW` Sprint 16 decision package. Its privacy, audit, retention, identity, legal, ownership, and production-gate controls are not approved current behavior.
