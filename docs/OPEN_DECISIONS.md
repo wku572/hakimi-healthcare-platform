@@ -48,6 +48,7 @@ This file records unresolved stakeholder questions and the deferred remainder of
     - Sprint 16 proposal: [qualified legal and regulatory applicability review agenda](./PRODUCTION_READINESS_GOVERNANCE.md#open-10-legal-and-regulatory-applicability).
     - Hypothetical evidence pack: [synthetic-data-only operating model and data-flow questions](./OPEN10_HYPOTHETICAL_OPERATING_MODEL.md).
     - Proposed data inventory: [repository-reconciled technical data assets and evidence gaps](./OPEN10_PROPOSED_DATA_INVENTORY.md).
+    - Data-flow evidence: [hypothetical flows and trust boundaries reconciled to inventory and operations](./OPEN10_HYPOTHETICAL_DATA_FLOW.md).
     - Decision status: `OPEN DECISION`; no jurisdiction, regulator, or legal conclusion is selected and selection is `PENDING`.
 11. Reminder policy
     - Related canonical records: [OPEN-11](./REQUIREMENTS.md)
