@@ -27,6 +27,7 @@
 | Governing decisions                               | `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-08`, `OPEN-10`, and `OPEN-12` remain `PENDING`                                                                                                            |
 | Production gates                                  | All remain `BLOCKED`                                                                                                                                                                             |
 | Product-owner review record                       | [GitHub issue #41](https://github.com/wku572/hakimi-healthcare-platform/issues/41)                                                                                                               |
+| Companion data-flow evidence                      | [Hypothetical flow and trust-boundary register](./OPEN10_HYPOTHETICAL_DATA_FLOW.md)                                                                                                              |
 
 Technical presence in this repository does not establish legal necessity, lawful basis, minimum necessity, retention authority, production authorization, or legal classification. Technical readiness cannot authorize production deployment or processing of real patient data.
 
@@ -349,7 +350,7 @@ Absence at this base commit is an as-built fact, not a permanent product decisio
 
 ## 12. Data-Flow Handoff
 
-Every current or hypothetical asset that a later data-flow review must represent is reconciled below without selecting a production architecture.
+Every current or hypothetical asset that the companion [hypothetical flow and trust-boundary register](./OPEN10_HYPOTHETICAL_DATA_FLOW.md) must represent is reconciled below without selecting a production architecture.
 
 | Inventory assets                          | Origin                             | Processing component                            | Storage                                       | Current recipient           | Trust-boundary crossing                     | Location/vendor/transfer question                                                           | Retention/deletion question                                    |
 | ----------------------------------------- | ---------------------------------- | ----------------------------------------------- | --------------------------------------------- | --------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
