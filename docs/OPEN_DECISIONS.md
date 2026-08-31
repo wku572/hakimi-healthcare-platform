@@ -50,7 +50,9 @@ This file records unresolved stakeholder questions and the deferred remainder of
     - Proposed data inventory: [repository-reconciled technical data assets and evidence gaps](./OPEN10_PROPOSED_DATA_INVENTORY.md).
     - Data-flow evidence: [hypothetical flows and trust boundaries reconciled to inventory and operations](./OPEN10_HYPOTHETICAL_DATA_FLOW.md).
     - Qualified review questionnaire: [blank evidence-collection instrument for qualified legal and regulatory reviewers](./OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md).
-    - Decision status: `OPEN DECISION`; no jurisdiction, regulator, or legal conclusion is selected and selection is `PENDING`.
+    - Product-owner review outcome: `REVISE`, recorded by Habte Selasie, Repository Owner and Product Decision Authority, on 2026-08-31 in [GitHub issue #41](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5475291583).
+    - Decision status: `OPEN DECISION`; implementation/governance selection remains `PENDING`; no jurisdiction, regulator, legal conclusion, provider, operating entity, retention period, production deployment, real patient-data processing, or production gate is selected.
+    - Required revision: reconsider only after an approved production operating entity, intended facilities and service population, actual provider/location/support/backup/identity/monitoring/communications facts, responsibility facts, qualified legal-review evidence, approved dependent purposes and policies, and applicable jurisdiction/regulator/registration/transfer/contractual/legal-obligation findings exist.
 11. Reminder policy
     - Related canonical records: [OPEN-11](./REQUIREMENTS.md)
     - Question: What timing, channels, content, timezone presentation, retry limits, and failure-handling rules should reminders use?

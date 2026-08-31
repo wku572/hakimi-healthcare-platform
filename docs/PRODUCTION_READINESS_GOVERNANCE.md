@@ -9,28 +9,28 @@
 - Governing open decisions: [OPEN-02](./REQUIREMENTS.md), [OPEN-06](./REQUIREMENTS.md), [OPEN-07](./REQUIREMENTS.md), [OPEN-08](./REQUIREMENTS.md), [OPEN-10](./REQUIREMENTS.md), and [OPEN-12](./REQUIREMENTS.md)
 - Current technical baseline: Sprint 15 workforce access control is implemented for synthetic data, but it is not evidence of production approval.
 
-This document proposes controls and decision choices. It does not resolve an OPEN record, establish a legal conclusion, assign a named person, select a regulator or hosting provider, set a retention period, or authorize production use. An accountable authority must record approval evidence separately before any proposal becomes governing policy.
+This document proposes controls and decision choices. It does not resolve an OPEN record, establish a legal conclusion, assign a named person, select a regulator or hosting provider, set a retention period, or authorize production use. An accountable authority must record decision evidence separately before any proposal becomes governing policy.
 
 ## Decision Governance
 
-Each decision is independent. Approval of one item does not approve its dependencies. The accountable authority identifies the organizational role that must own the recorded decision; the named person and evidence reference remain unrecorded until genuine approval occurs.
+Each decision is independent. Approval of one item does not approve its dependencies. A dated product-owner outcome may be `APPROVE`, `REVISE`, or `REJECT`; outcome authority and evidence must be recorded for any outcome, not only for approval. `OPEN-10` now has product-owner authority and evidence for `REVISE`, while qualified legal-review identity, qualified evidence, and applicability findings remain absent. Its implementation/governance selection remains `PENDING`, and production gates remain `BLOCKED`.
 
-| Decision  | Independent subject                                                                  | Current status  | Accountable approval authority                               | Required consultation                                                               | Recorded selection |
-| --------- | ------------------------------------------------------------------------------------ | --------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------------------ |
-| `OPEN-02` | Privacy, consent, lawful purpose, and minimum necessary access                       | `OPEN DECISION` | Product Decision Authority                                   | Privacy, clinical, security, and legal reviewers                                    | `PENDING`          |
-| `OPEN-06` | Security and clinical audit events, review, and evidence handling                    | `OPEN DECISION` | Product Decision Authority                                   | Security, clinical safety, privacy, operations, and legal reviewers                 | `PENDING`          |
-| `OPEN-07` | Retention, archival, deletion, backup, and legal hold                                | `OPEN DECISION` | Product Decision Authority                                   | Privacy, records-management, clinical, operations, security, and legal reviewers    | `PENDING`          |
-| `OPEN-08` | Patient identity, duplicate resolution, linking, merge, and multi-facility ownership | `OPEN DECISION` | Product Decision Authority                                   | Clinical safety, patient administration, privacy, security, and legal reviewers     | `PENDING`          |
-| `OPEN-10` | Applicable legal and regulatory requirements                                         | `OPEN DECISION` | Product Decision Authority, acting on qualified legal advice | Qualified legal, regulatory, privacy, clinical, and security reviewers              | `PENDING`          |
-| `OPEN-12` | Deployment target and operational ownership                                          | `OPEN DECISION` | Product Decision Authority                                   | Service, platform, security, privacy, clinical safety, data, and legal stakeholders | `PENDING`          |
+| Decision  | Independent subject                                                                  | Current status  | Recorded product-owner outcome | Accountable approval authority                                       | Required consultation                                                               | Recorded selection |
+| --------- | ------------------------------------------------------------------------------------ | --------------- | ------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------ |
+| `OPEN-02` | Privacy, consent, lawful purpose, and minimum necessary access                       | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Privacy, clinical, security, and legal reviewers                                    | `PENDING`          |
+| `OPEN-06` | Security and clinical audit events, review, and evidence handling                    | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Security, clinical safety, privacy, operations, and legal reviewers                 | `PENDING`          |
+| `OPEN-07` | Retention, archival, deletion, backup, and legal hold                                | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Privacy, records-management, clinical, operations, security, and legal reviewers    | `PENDING`          |
+| `OPEN-08` | Patient identity, duplicate resolution, linking, merge, and multi-facility ownership | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Clinical safety, patient administration, privacy, security, and legal reviewers     | `PENDING`          |
+| `OPEN-10` | Applicable legal and regulatory requirements                                         | `OPEN DECISION` | `REVISE`                       | Product Decision Authority; approval requires qualified legal advice | Qualified legal, regulatory, privacy, clinical, and security reviewers              | `PENDING`          |
+| `OPEN-12` | Deployment target and operational ownership                                          | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Service, platform, security, privacy, clinical safety, data, and legal stakeholders | `PENDING`          |
 
-For each record, the reviewer must choose exactly one outcome and attach a dated evidence reference:
+For each record, product-owner review must record exactly one outcome and attach dated outcome evidence:
 
 - `APPROVE`: accept the proposed resolution and its dependencies without filling unresolved details by implication.
 - `REVISE`: return exact changes, owners, and evidence needed before another review.
 - `REJECT`: record why the proposal is unsuitable and whether a replacement is required.
 
-No choice is selected in this Sprint 16 package.
+The recorded product-owner outcome for `OPEN-10` is `REVISE`, but the implementation and governance selection remains `PENDING` because required revision evidence and qualified external findings are incomplete. No other Sprint 16 outcome is recorded in this package.
 
 ### Related Decisions Outside Sprint 16
 
@@ -240,6 +240,7 @@ Recorded selection: `PENDING`.
 
 - The product vision references Ethiopia, but repository intent does not establish jurisdiction, deployment location, user location, organizational role, or applicable law.
 - No qualified legal opinion, regulator determination, contractual framework, or compliance evidence is recorded.
+- GitHub issue #41 records a product-owner `REVISE` outcome for `OPEN-10` on 2026-08-31. That outcome is a governance review result, not substantive legal advice or a qualified legal-applicability determination.
 
 ### Proposed Resolution
 
@@ -278,6 +279,32 @@ The review output must cite qualified evidence, effective dates, scope, assumpti
 | `REJECT`  | Record an alternative qualified-review process.                                           |
 
 Recorded selection: `PENDING`.
+
+### Product-Owner Review Outcome
+
+| Field                      | Value                                                                                                                                                      |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Outcome                    | `REVISE`                                                                                                                                                   |
+| Decision date              | 2026-08-31                                                                                                                                                 |
+| Authority                  | Habte Selasie - Repository Owner and Product Decision Authority                                                                                            |
+| Evidence URL               | [GitHub issue #41 REVISE comment](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5475291583)                                  |
+| Canonical decision type    | `OPEN DECISION`                                                                                                                                            |
+| Completion/selection state | `PENDING`                                                                                                                                                  |
+| Non-authorization boundary | This outcome does not approve a legal conclusion, production deployment, real patient-data processing, a provider, a jurisdiction, or any production gate. |
+
+Rationale: the repository now contains a hypothetical operating model, proposed data inventory, data-flow and trust-boundary register, and qualified-review questionnaire. These materials are sufficient for structured consultation but not for a qualified legal-applicability determination.
+
+`OPEN-10` must remain open and be reconsidered only after these required revisions exist:
+
+- approved production operating entity;
+- participating facilities and intended service population;
+- actual deployment target, providers, regions, support locations, backup locations, identity provider, monitoring destination, and communications facts;
+- controller, processor, healthcare-provider, contracting, and responsibility facts;
+- qualified legal reviewer identity, scope, findings, limitations, date, and durable evidence;
+- approved processing purposes and dependencies from `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-08`, and `OPEN-12`;
+- applicable jurisdiction, regulator, registration, transfer, contractual, and legal-obligation findings.
+
+Issue #41 remains open for follow-up evidence and the other Sprint 16 decisions. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## OPEN-12: Deployment Target And Operational Ownership
 
@@ -362,7 +389,7 @@ No phase below is authorized by this proposal. Each begins only after its govern
 
 1. Record decisions and qualified review evidence without changing runtime behavior.
 2. Design security and clinical audit persistence, atomicity, integrity, review, and failure handling under approved `OPEN-06` and `OPEN-07` rules.
-3. Design retention schedules, legal hold, archival, backup expiry, and evidenced disposal under approved `OPEN-07`, `OPEN-10`, and `OPEN-12` rules.
+3. Design retention schedules, legal hold, archival, backup expiry, and evidenced disposal only after future approved `OPEN-07`, `OPEN-10`, and `OPEN-12` rules exist.
 4. Design patient matching, steward review, links, merge, unmerge, provenance, and cross-facility field ownership under approved `OPEN-08`; then evaluate `DEC-01`.
 5. Select the production topology and assign named RACI owners under approved `OPEN-12` and legal constraints.
 6. Implement each concern as a separate reviewed runtime sprint with migrations, contracts, threat tests, rollback proof, synthetic fixtures, and documentation.
