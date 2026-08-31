@@ -49,6 +49,7 @@ This file records unresolved stakeholder questions and the deferred remainder of
     - Hypothetical evidence pack: [synthetic-data-only operating model and data-flow questions](./OPEN10_HYPOTHETICAL_OPERATING_MODEL.md).
     - Proposed data inventory: [repository-reconciled technical data assets and evidence gaps](./OPEN10_PROPOSED_DATA_INVENTORY.md).
     - Data-flow evidence: [hypothetical flows and trust boundaries reconciled to inventory and operations](./OPEN10_HYPOTHETICAL_DATA_FLOW.md).
+    - Qualified review questionnaire: [blank evidence-collection instrument for qualified legal and regulatory reviewers](./OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md).
     - Decision status: `OPEN DECISION`; no jurisdiction, regulator, or legal conclusion is selected and selection is `PENDING`.
 11. Reminder policy
     - Related canonical records: [OPEN-11](./REQUIREMENTS.md)
