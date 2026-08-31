@@ -29,6 +29,7 @@
 | Product-owner review                                                                           | [GitHub issue #41](https://github.com/wku572/hakimi-healthcare-platform/issues/41)                                                       |
 | Companion operating model                                                                      | [OPEN-10 hypothetical operating model](./OPEN10_HYPOTHETICAL_OPERATING_MODEL.md)                                                         |
 | Authoritative inventory                                                                        | [OPEN-10 proposed data inventory](./OPEN10_PROPOSED_DATA_INVENTORY.md)                                                                   |
+| Qualified review questionnaire                                                                 | [OPEN-10 qualified legal-review questionnaire](./OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md)                                         |
 
 Technical readiness cannot authorize production deployment or processing of real patient data. The diagrams and review questions do not select a deployment architecture, provider, network zone, operating entity, facility, vendor, recipient, or location.
 

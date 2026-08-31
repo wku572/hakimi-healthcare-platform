@@ -17,6 +17,7 @@ This directory contains the product baseline package for Hakimi / ሀኪሜ.
 - [OPEN10_HYPOTHETICAL_OPERATING_MODEL.md](./OPEN10_HYPOTHETICAL_OPERATING_MODEL.md) - hypothetical synthetic-data-only operating-model and data-flow evidence pack for qualified `OPEN-10` review
 - [OPEN10_PROPOSED_DATA_INVENTORY.md](./OPEN10_PROPOSED_DATA_INVENTORY.md) - repository-reconciled proposed data inventory for qualified `OPEN-10` review
 - [OPEN10_HYPOTHETICAL_DATA_FLOW.md](./OPEN10_HYPOTHETICAL_DATA_FLOW.md) - hypothetical current/future flow and trust-boundary reconciliation for qualified `OPEN-10` review
+- [OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md](./OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md) - blank evidence-collection questionnaire for qualified `OPEN-10` legal and regulatory review
 - [OPERATIONS_RUNBOOK.md](./OPERATIONS_RUNBOOK.md) - privacy-safe runtime event catalogue and diagnostic procedures
 
 ## Validation

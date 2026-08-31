@@ -28,6 +28,7 @@
 | Production gates                                  | All remain `BLOCKED`                                                                                                                                                                             |
 | Product-owner review record                       | [GitHub issue #41](https://github.com/wku572/hakimi-healthcare-platform/issues/41)                                                                                                               |
 | Companion data-flow evidence                      | [Hypothetical flow and trust-boundary register](./OPEN10_HYPOTHETICAL_DATA_FLOW.md)                                                                                                              |
+| Qualified review questionnaire                    | [OPEN-10 qualified legal-review questionnaire](./OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md)                                                                                                 |
 
 Technical presence in this repository does not establish legal necessity, lawful basis, minimum necessity, retention authority, production authorization, or legal classification. Technical readiness cannot authorize production deployment or processing of real patient data.
 

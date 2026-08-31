@@ -22,6 +22,7 @@
 | Preliminary source input              | External evidence-preparation artifact; not a repository dependency or legal authority                  |
 | Companion data inventory              | [Repository-reconciled proposed data inventory](./OPEN10_PROPOSED_DATA_INVENTORY.md)                    |
 | Companion data-flow evidence          | [Hypothetical flow and trust-boundary register](./OPEN10_HYPOTHETICAL_DATA_FLOW.md)                     |
+| Qualified review questionnaire        | [OPEN-10 qualified legal-review questionnaire](./OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md)        |
 | Product-owner review                  | [GitHub issue #41](https://github.com/wku572/hakimi-healthcare-platform/issues/41)                      |
 
 This pack describes one hypothetical workforce-only model so reviewers can identify missing facts and request evidence. It does not assert that the model will be adopted or that any law, role, obligation, registration, transfer mechanism, or retention period applies to Hakimi. Technical readiness cannot authorize production deployment or processing of real patient data.
