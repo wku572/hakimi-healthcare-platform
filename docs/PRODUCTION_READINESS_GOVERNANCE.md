@@ -13,7 +13,7 @@ This document proposes controls and decision choices. It does not resolve an OPE
 
 ## Decision Governance
 
-Each decision is independent. Approval of one item does not approve its dependencies. A dated product-owner outcome may be `APPROVE`, `REVISE`, or `REJECT`; outcome authority and evidence must be recorded for any outcome, not only for approval. `OPEN-10` now has product-owner authority and evidence for `REVISE`, while qualified legal-review identity, qualified evidence, and applicability findings remain absent. Its implementation/governance selection remains `PENDING`, and production gates remain `BLOCKED`.
+Each decision is independent. Approval of one item does not approve its dependencies. A dated product-owner outcome may be `APPROVE`, `REVISE`, or `REJECT`; outcome authority and evidence must be recorded for any outcome, not only for approval. `OPEN-10` and `OPEN-12` now have product-owner authority and evidence for `REVISE`, while qualified external-review evidence and required implementation facts remain incomplete. Their implementation/governance selections remain `PENDING`, and production gates remain `BLOCKED`.
 
 | Decision  | Independent subject                                                                  | Current status  | Recorded product-owner outcome | Accountable approval authority                                       | Required consultation                                                               | Recorded selection |
 | --------- | ------------------------------------------------------------------------------------ | --------------- | ------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------ |
@@ -22,7 +22,7 @@ Each decision is independent. Approval of one item does not approve its dependen
 | `OPEN-07` | Retention, archival, deletion, backup, and legal hold                                | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Privacy, records-management, clinical, operations, security, and legal reviewers    | `PENDING`          |
 | `OPEN-08` | Patient identity, duplicate resolution, linking, merge, and multi-facility ownership | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Clinical safety, patient administration, privacy, security, and legal reviewers     | `PENDING`          |
 | `OPEN-10` | Applicable legal and regulatory requirements                                         | `OPEN DECISION` | `REVISE`                       | Product Decision Authority; approval requires qualified legal advice | Qualified legal, regulatory, privacy, clinical, and security reviewers              | `PENDING`          |
-| `OPEN-12` | Deployment target and operational ownership                                          | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Service, platform, security, privacy, clinical safety, data, and legal stakeholders | `PENDING`          |
+| `OPEN-12` | Deployment target and operational ownership                                          | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Service, platform, security, privacy, clinical safety, data, and legal stakeholders | `PENDING`          |
 
 For each record, product-owner review must record exactly one outcome and attach dated outcome evidence:
 
@@ -30,7 +30,7 @@ For each record, product-owner review must record exactly one outcome and attach
 - `REVISE`: return exact changes, owners, and evidence needed before another review.
 - `REJECT`: record why the proposal is unsuitable and whether a replacement is required.
 
-The recorded product-owner outcome for `OPEN-10` is `REVISE`, but the implementation and governance selection remains `PENDING` because required revision evidence and qualified external findings are incomplete. No other Sprint 16 outcome is recorded in this package.
+The recorded product-owner outcomes for `OPEN-10` and `OPEN-12` are `REVISE`, but the implementation and governance selections remain `PENDING` because required revision evidence, implementation facts, and qualified external findings are incomplete. No other Sprint 16 outcome is recorded in this package.
 
 ### Related Decisions Outside Sprint 16
 
@@ -312,6 +312,7 @@ Issue #41 remains open for follow-up evidence and the other Sprint 16 decisions.
 
 - Docker, Compose, health checks, CI quality gates, supply-chain checks, and an operational runbook exist.
 - Compose is a local baseline; no production target, service-level objective, recovery objective, on-call owner, incident authority, backup owner, secret owner, or production identity provider is approved.
+- GitHub issue #41 records a product-owner `REVISE` outcome for `OPEN-12` on 2026-08-31. That outcome is a governance review result, not production authorization or operational approval.
 
 ### Proposed Resolution
 
@@ -355,6 +356,36 @@ No role above has a named assignee yet. Production remains blocked until every a
 | `REJECT`  | Record a replacement ownership and deployment-governance model.                                                  |
 
 Recorded selection: `PENDING`.
+
+### Product-Owner Review Outcome
+
+| Field                      | Value                                                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Outcome                    | `REVISE`                                                                                                                                                     |
+| Decision date              | 2026-08-31                                                                                                                                                   |
+| Authority                  | Habte Selasie - Repository Owner and Product Decision Authority                                                                                              |
+| Evidence URL               | [GitHub issue #41 OPEN-12 REVISE comment](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5475887779)                            |
+| Canonical decision type    | `OPEN DECISION`                                                                                                                                              |
+| Completion/selection state | `PENDING`                                                                                                                                                    |
+| Non-authorization boundary | This outcome does not approve a production target, provider, architecture, region, owner, RACI, service objective, recovery objective, or operational model. |
+
+Rationale: the repository has a local container, Compose, health, CI, supply-chain, and runbook baseline, but it lacks the production operating facts and accepted operational ownership evidence needed to select a production target or ownership model.
+
+`OPEN-12` must remain open and be reconsidered only after these required revisions exist:
+
+- approved production operating entity and service owner;
+- selected deployment target, provider, architecture, region, and environments;
+- participating facilities and intended users;
+- named operational, security, privacy, clinical, data, and legal owners;
+- accepted RACI and shared-responsibility model;
+- service-level, availability, capacity, support, and maintenance objectives;
+- recovery-time, recovery-point, backup, restore, and disaster-recovery objectives;
+- monitoring, alerting, escalation, incident-command, and on-call ownership;
+- production identity, secret, certificate, and privileged-access ownership;
+- release, migration, rollback, emergency-change, and production-acceptance authority;
+- qualified privacy, security, clinical, operational, and legal review evidence.
+
+Issue #41 remains open for follow-up evidence and the remaining Sprint 16 decisions. No production target, provider, architecture, region, owner, RACI, service objective, recovery objective, or operational model is selected. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## Data Classification And Handling Matrix
 
