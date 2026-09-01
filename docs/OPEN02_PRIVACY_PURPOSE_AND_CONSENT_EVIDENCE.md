@@ -8,7 +8,7 @@ Real patient-data processing: `NOT AUTHORIZED`
 
 Canonical decision type: `OPEN DECISION`
 
-Recorded product-owner outcome: `NOT RECORDED`
+Recorded product-owner outcome: `REVISE`
 
 Implementation/governance selection: `PENDING`
 
@@ -261,4 +261,4 @@ Decision-outcome independence:
 - [ ] `REVISE`: return specified purposes, notices, rights, access boundaries, dependencies, or evidence requirements for rework.
 - [ ] `REJECT`: reject the proposed model and require a different privacy governance approach before implementation.
 
-`OPEN-02` remains an `OPEN DECISION`. Its recorded product-owner outcome remains `NOT RECORDED`; its implementation/governance selection remains `PENDING`; production deployment and real patient-data processing remain `NOT AUTHORIZED`; all production gates remain `BLOCKED`.
+`OPEN-02` remains an `OPEN DECISION`. Its recorded product-owner outcome is `REVISE`, recorded by Habte Selasie, Repository Owner and Product Decision Authority, on 2026-09-01 in [GitHub issue #41](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5490115520). Its implementation/governance selection remains `PENDING`; production deployment and real patient-data processing remain `NOT AUTHORIZED`; all production gates remain `BLOCKED`.

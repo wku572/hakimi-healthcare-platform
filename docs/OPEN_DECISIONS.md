@@ -12,7 +12,9 @@ This file records unresolved stakeholder questions and the deferred remainder of
    - Question: What notice, consent, purpose-limitation, and patient privacy policy should the platform enforce?
    - Sprint 16 proposal: [purpose-bound privacy and minimum necessary access](./PRODUCTION_READINESS_GOVERNANCE.md#open-02-privacy-consent-lawful-purpose-and-minimum-necessary-access).
    - Evidence pack: [privacy, consent, lawful-purpose, and minimum-necessary access evidence](./OPEN02_PRIVACY_PURPOSE_AND_CONSENT_EVIDENCE.md).
-   - Decision status: `OPEN DECISION`; approve, revise, or reject selection is `PENDING`.
+   - Product-owner review outcome: `REVISE`, recorded by Habte Selasie, Repository Owner and Product Decision Authority, on 2026-09-01 in [GitHub issue #41](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5490115520).
+   - Decision status: `OPEN DECISION`; implementation/governance selection remains `PENDING`; no lawful basis, consent model, notice, rights implementation, jurisdiction, regulator, operating entity, provider, production owner, production deployment, real patient-data processing, or production gate is selected.
+   - Required revision: reconsider only after bounded processing purposes, applicable lawful grounds, consent and withdrawal rules where applicable, notices, transparency obligations, patient-rights and complaint workflows, representative authority, minimum-necessary fields, exception handling, and dependent evidence are reviewed and documented by the required qualified functions.
 3. User roles
    - Related canonical records: [OPEN-03](./REQUIREMENTS.md)
    - Recorded outcome: [APPROVED WITH REVISIONS](./ACCESS_CONTROL_BASELINE.md#recorded-approval) for the workforce-only Sprint 15 role catalogue and facility scope.
@@ -84,6 +86,6 @@ The Sprint 16 proposal does not resolve:
 - [OPEN-10](./REQUIREMENTS.md): applicable legal, regulatory, healthcare, or data-protection obligations.
 - [OPEN-12](./REQUIREMENTS.md): production target, named operational ownership, backups, incidents, or on-call responsibility.
 
-These remain independent stakeholder decisions after the bounded workforce approvals and Sprint 15 implementation for `OPEN-03`, `OPEN-04`, and `OPEN-05`. `OPEN-08` remains without a recorded outcome, while `OPEN-12` has a recorded `REVISE` outcome but remains pending for implementation/governance selection.
+These remain independent stakeholder decisions after the bounded workforce approvals and Sprint 15 implementation for `OPEN-03`, `OPEN-04`, and `OPEN-05`. `OPEN-06`, `OPEN-07`, and `OPEN-08` remain without recorded outcomes, while `OPEN-02`, `OPEN-10`, and `OPEN-12` have recorded `REVISE` outcomes but remain pending for implementation/governance selection.
 
 Sprint 15 remains synthetic-data-only. Production activation and real patient-data processing are blocked until the six Sprint 16 decisions, their dependencies, qualified reviews, named operational ownership, and the applicable [production gates](./PRODUCTION_READINESS_GOVERNANCE.md#production-and-real-patient-data-gates) receive genuine recorded approval. `OPEN-01`, `OPEN-09`, and `OPEN-11` also remain independent blockers for production scopes that use their healthcare, appointment, or reminder workflows.
