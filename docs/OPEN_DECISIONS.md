@@ -36,6 +36,7 @@ This file records unresolved stakeholder questions and the deferred remainder of
    - Related canonical records: [OPEN-07](./REQUIREMENTS.md)
    - Question: When is soft deletion sufficient and when, if ever, is hard deletion allowed?
    - Sprint 16 proposal: [category schedules, archival, deletion, backups, and legal hold](./PRODUCTION_READINESS_GOVERNANCE.md#open-07-retention-archival-deletion-backup-and-legal-hold).
+   - Evidence pack: [retention, deletion, backup, and legal-hold evidence](./OPEN07_RETENTION_DELETION_AND_LEGAL_HOLD_EVIDENCE.md).
    - Decision status: `OPEN DECISION`; no duration is proposed and selection is `PENDING`.
 8. Patient demographics, identity, and multi-facility registration
    - Related canonical records: [OPEN-08](./REQUIREMENTS.md)

@@ -15,6 +15,7 @@ This directory contains the product baseline package for Hakimi / ሀኪሜ.
 - [SPRINT_15_IMPLEMENTATION_SPEC.md](./SPRINT_15_IMPLEMENTATION_SPEC.md) - implemented workforce persistence, OIDC resource-server, provisioning, authorization, and synthetic-test boundary
 - [PRODUCTION_READINESS_GOVERNANCE.md](./PRODUCTION_READINESS_GOVERNANCE.md) - proposed Sprint 16 privacy, audit, retention, patient-identity, legal-review, operational-ownership, and production-gate decisions
 - [OPEN02_PRIVACY_PURPOSE_AND_CONSENT_EVIDENCE.md](./OPEN02_PRIVACY_PURPOSE_AND_CONSENT_EVIDENCE.md) - synthetic-data-only privacy, consent, lawful-purpose, and minimum-necessary evidence pack for `OPEN-02` review
+- [OPEN07_RETENTION_DELETION_AND_LEGAL_HOLD_EVIDENCE.md](./OPEN07_RETENTION_DELETION_AND_LEGAL_HOLD_EVIDENCE.md) - synthetic-data-only retention, deletion, backup, and legal-hold evidence pack for `OPEN-07` review
 - [OPEN10_HYPOTHETICAL_OPERATING_MODEL.md](./OPEN10_HYPOTHETICAL_OPERATING_MODEL.md) - hypothetical synthetic-data-only operating-model and data-flow evidence pack for qualified `OPEN-10` review
 - [OPEN10_PROPOSED_DATA_INVENTORY.md](./OPEN10_PROPOSED_DATA_INVENTORY.md) - repository-reconciled proposed data inventory for qualified `OPEN-10` review
 - [OPEN10_HYPOTHETICAL_DATA_FLOW.md](./OPEN10_HYPOTHETICAL_DATA_FLOW.md) - hypothetical current/future flow and trust-boundary reconciliation for qualified `OPEN-10` review
