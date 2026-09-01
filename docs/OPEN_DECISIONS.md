@@ -11,6 +11,7 @@ This file records unresolved stakeholder questions and the deferred remainder of
    - Related canonical records: [OPEN-02](./REQUIREMENTS.md)
    - Question: What notice, consent, purpose-limitation, and patient privacy policy should the platform enforce?
    - Sprint 16 proposal: [purpose-bound privacy and minimum necessary access](./PRODUCTION_READINESS_GOVERNANCE.md#open-02-privacy-consent-lawful-purpose-and-minimum-necessary-access).
+   - Evidence pack: [privacy, consent, lawful-purpose, and minimum-necessary access evidence](./OPEN02_PRIVACY_PURPOSE_AND_CONSENT_EVIDENCE.md).
    - Decision status: `OPEN DECISION`; approve, revise, or reject selection is `PENDING`.
 3. User roles
    - Related canonical records: [OPEN-03](./REQUIREMENTS.md)
