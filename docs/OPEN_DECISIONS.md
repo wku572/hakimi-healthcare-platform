@@ -37,7 +37,9 @@ This file records unresolved stakeholder questions and the deferred remainder of
    - Question: When is soft deletion sufficient and when, if ever, is hard deletion allowed?
    - Sprint 16 proposal: [category schedules, archival, deletion, backups, and legal hold](./PRODUCTION_READINESS_GOVERNANCE.md#open-07-retention-archival-deletion-backup-and-legal-hold).
    - Evidence pack: [retention, deletion, backup, and legal-hold evidence](./OPEN07_RETENTION_DELETION_AND_LEGAL_HOLD_EVIDENCE.md).
-   - Decision status: `OPEN DECISION`; no duration is proposed and selection is `PENDING`.
+   - Product-owner review outcome: `REVISE`, recorded by Habte Selasie, Repository Owner and Product Decision Authority, on 2026-09-01 in [GitHub issue #41](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5491419798).
+   - Decision status: `OPEN DECISION`; implementation/governance selection remains `PENDING`; no retention period, trigger, archival tier, deletion deadline, backup period, disposition method, legal-hold rule, provider, jurisdiction, reviewer, production owner, production deployment, real patient-data processing, or production gate is selected.
+   - Required revision: reconsider only after retention categories and triggers, applicable durations, archival and disposition rules, backup scope and expiry, restore and deletion-propagation controls, legal-hold issuance and release authority, patient-rights and identity interactions, audit-record dependencies, exception handling, failed-disposal recovery, downstream-recipient obligations, and deletion/destruction evidence are reviewed and documented by the required qualified functions.
 8. Patient demographics, identity, and multi-facility registration
    - Related canonical records: [OPEN-08](./REQUIREMENTS.md)
    - Question: What patient identity, merge, and cross-facility registration rules should apply?
@@ -87,6 +89,6 @@ The Sprint 16 proposal does not resolve:
 - [OPEN-10](./REQUIREMENTS.md): applicable legal, regulatory, healthcare, or data-protection obligations.
 - [OPEN-12](./REQUIREMENTS.md): production target, named operational ownership, backups, incidents, or on-call responsibility.
 
-These remain independent stakeholder decisions after the bounded workforce approvals and Sprint 15 implementation for `OPEN-03`, `OPEN-04`, and `OPEN-05`. `OPEN-06`, `OPEN-07`, and `OPEN-08` remain without recorded outcomes, while `OPEN-02`, `OPEN-10`, and `OPEN-12` have recorded `REVISE` outcomes but remain pending for implementation/governance selection.
+These remain independent stakeholder decisions after the bounded workforce approvals and Sprint 15 implementation for `OPEN-03`, `OPEN-04`, and `OPEN-05`. `OPEN-06` and `OPEN-08` remain without recorded outcomes, while `OPEN-02`, `OPEN-07`, `OPEN-10`, and `OPEN-12` have recorded `REVISE` outcomes but remain pending for implementation/governance selection.
 
 Sprint 15 remains synthetic-data-only. Production activation and real patient-data processing are blocked until the six Sprint 16 decisions, their dependencies, qualified reviews, named operational ownership, and the applicable [production gates](./PRODUCTION_READINESS_GOVERNANCE.md#production-and-real-patient-data-gates) receive genuine recorded approval. `OPEN-01`, `OPEN-09`, and `OPEN-11` also remain independent blockers for production scopes that use their healthcare, appointment, or reminder workflows.

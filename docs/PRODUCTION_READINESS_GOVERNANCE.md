@@ -13,13 +13,13 @@ This document proposes controls and decision choices. It does not resolve an OPE
 
 ## Decision Governance
 
-Each decision is independent. Approval of one item does not approve its dependencies. A dated product-owner outcome may be `APPROVE`, `REVISE`, or `REJECT`; outcome authority and evidence must be recorded for any outcome, not only for approval. `OPEN-02`, `OPEN-10`, and `OPEN-12` now have product-owner authority and evidence for `REVISE`, while qualified external-review evidence and required implementation facts remain incomplete. Their implementation/governance selections remain `PENDING`, and production gates remain `BLOCKED`.
+Each decision is independent. Approval of one item does not approve its dependencies. A dated product-owner outcome may be `APPROVE`, `REVISE`, or `REJECT`; outcome authority and evidence must be recorded for any outcome, not only for approval. `OPEN-02`, `OPEN-07`, `OPEN-10`, and `OPEN-12` now have product-owner authority and evidence for `REVISE`, while qualified external-review evidence and required implementation facts remain incomplete. Their implementation/governance selections remain `PENDING`, and production gates remain `BLOCKED`.
 
 | Decision  | Independent subject                                                                  | Current status  | Recorded product-owner outcome | Accountable approval authority                                       | Required consultation                                                               | Recorded selection |
 | --------- | ------------------------------------------------------------------------------------ | --------------- | ------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------ |
 | `OPEN-02` | Privacy, consent, lawful purpose, and minimum necessary access                       | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Privacy, clinical, security, and legal reviewers                                    | `PENDING`          |
 | `OPEN-06` | Security and clinical audit events, review, and evidence handling                    | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Security, clinical safety, privacy, operations, and legal reviewers                 | `PENDING`          |
-| `OPEN-07` | Retention, archival, deletion, backup, and legal hold                                | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Privacy, records-management, clinical, operations, security, and legal reviewers    | `PENDING`          |
+| `OPEN-07` | Retention, archival, deletion, backup, and legal hold                                | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Privacy, records-management, clinical, operations, security, and legal reviewers    | `PENDING`          |
 | `OPEN-08` | Patient identity, duplicate resolution, linking, merge, and multi-facility ownership | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Clinical safety, patient administration, privacy, security, and legal reviewers     | `PENDING`          |
 | `OPEN-10` | Applicable legal and regulatory requirements                                         | `OPEN DECISION` | `REVISE`                       | Product Decision Authority; approval requires qualified legal advice | Qualified legal, regulatory, privacy, clinical, and security reviewers              | `PENDING`          |
 | `OPEN-12` | Deployment target and operational ownership                                          | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Service, platform, security, privacy, clinical safety, data, and legal stakeholders | `PENDING`          |
@@ -30,7 +30,7 @@ For each record, product-owner review must record exactly one outcome and attach
 - `REVISE`: return exact changes, owners, and evidence needed before another review.
 - `REJECT`: record why the proposal is unsuitable and whether a replacement is required.
 
-The recorded product-owner outcomes for `OPEN-02`, `OPEN-10`, and `OPEN-12` are `REVISE`, but the implementation and governance selections remain `PENDING` because required revision evidence, implementation facts, and qualified external findings are incomplete. `OPEN-06`, `OPEN-07`, and `OPEN-08` still have no recorded product-owner outcome.
+The recorded product-owner outcomes for `OPEN-02`, `OPEN-07`, `OPEN-10`, and `OPEN-12` are `REVISE`, but the implementation and governance selections remain `PENDING` because required revision evidence, implementation facts, and qualified external findings are incomplete. `OPEN-06` and `OPEN-08` still have no recorded product-owner outcome.
 
 ### Related Decisions Outside Sprint 16
 
@@ -169,6 +169,7 @@ Recorded selection: `PENDING`.
 
 - Facilities, practitioners, assignments, and patients use lifecycle deactivation; appointments and reminders preserve history.
 - Soft deletion is not erasure, and no approved retention schedule, archival tier, hard-deletion workflow, backup lifecycle, or legal-hold process exists.
+- GitHub issue #41 records a product-owner `REVISE` outcome for `OPEN-07` on 2026-09-01. That outcome is a governance review result, not records-management approval, privacy approval, legal approval, clinical approval, security approval, operational approval, retention-period selection, deletion-workflow approval, implementation authorization, production authorization, or real patient-data authorization.
 
 ### Proposed Resolution
 
@@ -214,6 +215,37 @@ Proposed controls:
 | `REJECT`  | Record a replacement retention and disposal model.                                                    |
 
 Recorded selection: `PENDING`.
+
+### Product-Owner Review Outcome
+
+| Field                      | Value                                                                                                                                                                                                                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Outcome                    | `REVISE`                                                                                                                                                                                                                                                                          |
+| Decision date              | 2026-09-01                                                                                                                                                                                                                                                                        |
+| Authority                  | Habte Selasie - Repository Owner and Product Decision Authority                                                                                                                                                                                                                   |
+| Evidence URL               | [GitHub issue #41 OPEN-07 REVISE comment](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5491419798)                                                                                                                                                 |
+| Canonical decision type    | `OPEN DECISION`                                                                                                                                                                                                                                                                   |
+| Completion/selection state | `PENDING`                                                                                                                                                                                                                                                                         |
+| Non-authorization boundary | This outcome does not approve a retention period, trigger, archival tier, deletion deadline, backup period, disposition method, legal-hold rule, provider, jurisdiction, reviewer, production owner, production deployment, real patient-data processing, or any production gate. |
+
+Rationale: the retention, archival, deletion, backup, and legal-hold proposal identifies the categories and controls that need review, but it lacks the qualified records-management, privacy, legal, clinical, security, operations, patient-identity, audit, downstream-recipient, and product evidence required to select a governing model.
+
+`OPEN-07` must remain open and be reconsidered only after these required revisions exist:
+
+- retention categories and triggers;
+- applicable durations;
+- archival and disposition rules;
+- backup scope and expiry;
+- restore and deletion-propagation controls;
+- legal-hold issuance and release authority;
+- patient-rights and identity interactions;
+- audit-record dependencies;
+- exception handling;
+- failed-disposal recovery;
+- downstream-recipient obligations;
+- deletion and destruction evidence reviewed and documented by the required qualified functions.
+
+Issue #41 remains open for follow-up evidence and the remaining Sprint 16 decisions. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## OPEN-08: Patient Identity And Multi-Facility Ownership
 
