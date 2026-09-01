@@ -9,15 +9,15 @@
 - Governing open decisions: [OPEN-02](./REQUIREMENTS.md), [OPEN-06](./REQUIREMENTS.md), [OPEN-07](./REQUIREMENTS.md), [OPEN-08](./REQUIREMENTS.md), [OPEN-10](./REQUIREMENTS.md), and [OPEN-12](./REQUIREMENTS.md)
 - Current technical baseline: Sprint 15 workforce access control is implemented for synthetic data, but it is not evidence of production approval.
 
-This document proposes controls and decision choices. It does not resolve an OPEN record, establish a legal conclusion, assign a named person, select a regulator or hosting provider, set a retention period, or authorize production use. An accountable authority must record decision evidence separately before any proposal becomes governing policy.
+This document proposes controls and decision choices. It does not resolve an OPEN record, establish a legal conclusion, assign a named operational or production owner, select a regulator or hosting provider, set a retention period, or authorize production use. An accountable authority must record decision evidence separately before any proposal becomes governing policy.
 
 ## Decision Governance
 
-Each decision is independent. Approval of one item does not approve its dependencies. A dated product-owner outcome may be `APPROVE`, `REVISE`, or `REJECT`; outcome authority and evidence must be recorded for any outcome, not only for approval. `OPEN-10` and `OPEN-12` now have product-owner authority and evidence for `REVISE`, while qualified external-review evidence and required implementation facts remain incomplete. Their implementation/governance selections remain `PENDING`, and production gates remain `BLOCKED`.
+Each decision is independent. Approval of one item does not approve its dependencies. A dated product-owner outcome may be `APPROVE`, `REVISE`, or `REJECT`; outcome authority and evidence must be recorded for any outcome, not only for approval. `OPEN-02`, `OPEN-10`, and `OPEN-12` now have product-owner authority and evidence for `REVISE`, while qualified external-review evidence and required implementation facts remain incomplete. Their implementation/governance selections remain `PENDING`, and production gates remain `BLOCKED`.
 
 | Decision  | Independent subject                                                                  | Current status  | Recorded product-owner outcome | Accountable approval authority                                       | Required consultation                                                               | Recorded selection |
 | --------- | ------------------------------------------------------------------------------------ | --------------- | ------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------ |
-| `OPEN-02` | Privacy, consent, lawful purpose, and minimum necessary access                       | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Privacy, clinical, security, and legal reviewers                                    | `PENDING`          |
+| `OPEN-02` | Privacy, consent, lawful purpose, and minimum necessary access                       | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Privacy, clinical, security, and legal reviewers                                    | `PENDING`          |
 | `OPEN-06` | Security and clinical audit events, review, and evidence handling                    | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Security, clinical safety, privacy, operations, and legal reviewers                 | `PENDING`          |
 | `OPEN-07` | Retention, archival, deletion, backup, and legal hold                                | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Privacy, records-management, clinical, operations, security, and legal reviewers    | `PENDING`          |
 | `OPEN-08` | Patient identity, duplicate resolution, linking, merge, and multi-facility ownership | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Clinical safety, patient administration, privacy, security, and legal reviewers     | `PENDING`          |
@@ -30,7 +30,7 @@ For each record, product-owner review must record exactly one outcome and attach
 - `REVISE`: return exact changes, owners, and evidence needed before another review.
 - `REJECT`: record why the proposal is unsuitable and whether a replacement is required.
 
-The recorded product-owner outcomes for `OPEN-10` and `OPEN-12` are `REVISE`, but the implementation and governance selections remain `PENDING` because required revision evidence, implementation facts, and qualified external findings are incomplete. No other Sprint 16 outcome is recorded in this package.
+The recorded product-owner outcomes for `OPEN-02`, `OPEN-10`, and `OPEN-12` are `REVISE`, but the implementation and governance selections remain `PENDING` because required revision evidence, implementation facts, and qualified external findings are incomplete. `OPEN-06`, `OPEN-07`, and `OPEN-08` still have no recorded product-owner outcome.
 
 ### Related Decisions Outside Sprint 16
 
@@ -43,6 +43,7 @@ This package does not resolve [OPEN-01](./REQUIREMENTS.md) healthcare and busine
 - Runtime errors and structured logs use privacy-safe boundaries, request bodies are not logged, and access is default deny.
 - Workforce access is facility-scoped, while patient authentication and self-service remain blocked.
 - The repository has no approved privacy notice, consent model, lawful-purpose catalogue, patient-rights process, or production data-use authorization.
+- GitHub issue #41 records a product-owner `REVISE` outcome for `OPEN-02` on 2026-09-01. That outcome is a governance review result, not qualified privacy approval, legal approval, lawful-basis selection, consent-model selection, implementation authorization, production authorization, or real patient-data authorization.
 
 ### Proposed Resolution
 
@@ -80,6 +81,34 @@ Adopt a purpose-bound privacy model before real data is introduced:
 | `REJECT`  | Record the replacement privacy governance model and why it is safer.                                     |
 
 Recorded selection: `PENDING`.
+
+### Product-Owner Review Outcome
+
+| Field                      | Value                                                                                                                                                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Outcome                    | `REVISE`                                                                                                                                                                                                                             |
+| Decision date              | 2026-09-01                                                                                                                                                                                                                           |
+| Authority                  | Habte Selasie - Repository Owner and Product Decision Authority                                                                                                                                                                      |
+| Evidence URL               | [GitHub issue #41 OPEN-02 REVISE comment](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5490115520)                                                                                                    |
+| Canonical decision type    | `OPEN DECISION`                                                                                                                                                                                                                      |
+| Completion/selection state | `PENDING`                                                                                                                                                                                                                            |
+| Non-authorization boundary | This outcome does not approve a lawful basis, consent model, notice, rights implementation, jurisdiction, regulator, operating entity, provider, production owner, production deployment, real patient-data processing, or any gate. |
+
+Rationale: the purpose-bound privacy proposal identifies the necessary privacy, consent, lawful-purpose, rights, and minimum-necessary topics, but it lacks the qualified privacy, legal, clinical, security, records, operations, patient-administration, and product evidence required to select a governing model.
+
+`OPEN-02` must remain open and be reconsidered only after these required revisions exist:
+
+- bounded processing purposes;
+- applicable lawful grounds;
+- consent and withdrawal rules where applicable;
+- notices and transparency obligations;
+- patient-rights and complaint workflows;
+- representative authority;
+- minimum-necessary fields;
+- exception handling;
+- dependent evidence reviewed and documented by the required qualified functions.
+
+Issue #41 remains open for follow-up evidence and the remaining Sprint 16 decisions. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## OPEN-06: Security And Clinical Audit Events
 
