@@ -13,10 +13,13 @@
 | Field                                 | Value                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Purpose                               | Provide repository-reconciled evidence for records-management, privacy, legal, clinical, security, operational, and product-owner review of `OPEN-07`                                                                                                                                                            |
-| Decision effect                       | None; this document does not select `APPROVE`, `REVISE`, or `REJECT` and does not close `OPEN-07`                                                                                                                                                                                                                |
+| Decision effect                       | Records the product-owner `REVISE` outcome while preserving `OPEN-07` as an open decision; this document does not select retention, archival, deletion, backup, legal-hold, implementation, production, or real-data processing policy                                                                           |
 | Canonical decision type               | `OPEN DECISION`                                                                                                                                                                                                                                                                                                  |
 | Implementation/governance selection   | `PENDING`                                                                                                                                                                                                                                                                                                        |
-| Recorded product-owner outcome        | `NOT RECORDED`                                                                                                                                                                                                                                                                                                   |
+| Recorded product-owner outcome        | `REVISE`                                                                                                                                                                                                                                                                                                         |
+| Decision date                         | 2026-09-01                                                                                                                                                                                                                                                                                                       |
+| Authority                             | Habte Selasie - Repository Owner and Product Decision Authority                                                                                                                                                                                                                                                  |
+| Evidence URL                          | [GitHub issue #41 OPEN-07 REVISE comment](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5491419798)                                                                                                                                                                                |
 | Production deployment                 | `NOT AUTHORIZED`                                                                                                                                                                                                                                                                                                 |
 | Real patient-data processing          | `NOT AUTHORIZED`                                                                                                                                                                                                                                                                                                 |
 | Retention durations                   | `NOT DETERMINED`                                                                                                                                                                                                                                                                                                 |
@@ -31,8 +34,8 @@
 
 This document is not legal advice, a qualified legal opinion, a records-management
 schedule, a clinical-safety policy, an operational runbook, or production
-authorization. It collects current repository facts and proposed review questions so
-qualified reviewers and the product owner can decide `OPEN-07` later.
+authorization. The recorded `REVISE` outcome is a governance-review result, not
+records-management, privacy, legal, clinical, security, or operational approval.
 
 ## Evidence Labels
 
@@ -444,16 +447,22 @@ Outcome rules:
 
 ## Final Governance State
 
-| Decision  | Recorded product-owner outcome | Canonical decision type | Implementation/governance selection | Notes                                                                                               |
-| --------- | ------------------------------ | ----------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `OPEN-02` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Privacy, lawful purpose, notice, consent, rights, and minimum-necessary evidence remains incomplete |
-| `OPEN-06` | `NOT RECORDED`                 | `OPEN DECISION`         | `PENDING`                           | Audit events, store, integrity, review, and retention remain open                                   |
-| `OPEN-07` | `NOT RECORDED`                 | `OPEN DECISION`         | `PENDING`                           | This evidence package records no outcome and selects no duration or method                          |
-| `OPEN-08` | `NOT RECORDED`                 | `OPEN DECISION`         | `PENDING`                           | Patient identity, duplicate, merge, and multi-facility ownership remain open                        |
-| `OPEN-10` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Qualified legal applicability and production facts remain incomplete                                |
-| `OPEN-12` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Deployment target and operational ownership remain incomplete                                       |
+| Decision  | Recorded product-owner outcome | Canonical decision type | Implementation/governance selection | Notes                                                                                                          |
+| --------- | ------------------------------ | ----------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `OPEN-02` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Privacy, lawful purpose, notice, consent, rights, and minimum-necessary evidence remains incomplete            |
+| `OPEN-06` | `NOT RECORDED`                 | `OPEN DECISION`         | `PENDING`                           | Audit events, store, integrity, review, and retention remain open                                              |
+| `OPEN-07` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Product-owner revision requested; no duration, trigger, method, hold rule, or production authority is selected |
+| `OPEN-08` | `NOT RECORDED`                 | `OPEN DECISION`         | `PENDING`                           | Patient identity, duplicate, merge, and multi-facility ownership remain open                                   |
+| `OPEN-10` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Qualified legal applicability and production facts remain incomplete                                           |
+| `OPEN-12` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Deployment target and operational ownership remain incomplete                                                  |
 
 Production deployment remains `NOT AUTHORIZED`. Real patient-data processing remains
 `NOT AUTHORIZED`. All production gates remain `BLOCKED`. This document does not
 introduce a `CONFIRMED` record, select a provider, choose a retention period, approve
-hard deletion, approve legal hold, or authorize production use.
+hard deletion, approve legal hold, or authorize production use. `OPEN-07` must be
+reconsidered after retention categories and triggers, applicable durations, archival
+and disposition rules, backup scope and expiry, restore and deletion-propagation
+controls, legal-hold issuance and release authority, patient-rights and identity
+interactions, audit-record dependencies, exception handling, failed-disposal recovery,
+downstream-recipient obligations, and deletion/destruction evidence are reviewed and
+documented by the required qualified functions.
