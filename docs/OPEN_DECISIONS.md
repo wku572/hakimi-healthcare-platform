@@ -32,7 +32,9 @@ This file records unresolved stakeholder questions and the deferred remainder of
    - Question: What audit events, retention, and review rules are required?
    - Sprint 16 proposal: [separate security and clinical audit event families](./PRODUCTION_READINESS_GOVERNANCE.md#open-06-security-and-clinical-audit-events).
    - Evidence pack: [security and clinical audit evidence](./OPEN06_SECURITY_AND_CLINICAL_AUDIT_EVIDENCE.md).
-   - Decision status: `OPEN DECISION`; approve, revise, or reject selection is `PENDING`.
+   - Product-owner review outcome: `REVISE`, recorded by Habte Selasie, Repository Owner and Product Decision Authority, on 2026-09-01 in [GitHub issue #41](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5494209792).
+   - Decision status: `OPEN DECISION`; implementation/governance selection remains `PENDING`; no audit policy, current diagnostics as durable audit evidence, audit store, integrity mechanism, trusted timestamping, audit retention, deletion or legal-hold rule, provider, SIEM, destination, region, recipient, reviewer, production owner, production deployment, real patient-data processing, or production gate is selected.
+   - Required revision: reconsider only after required security and clinical audit event families, actor/subject/resource/facility/action/outcome/reason/correlation/timestamp fields, minimum-necessary and privacy-safe field boundaries, clinical significance and patient-safety requirements, authentication/authorization/provisioning/session/revocation evidence, audit-write atomicity and failed-write behavior, integrity and tamper-evidence controls, trusted time, ordering, durable storage, recipient model, audit access, review, alerting, escalation, segregation of duties, investigation, disclosure, export, redaction, evidence-chain controls, retention/deletion/backup/restoration/legal-hold dependencies, exception handling, recovery handling, named operational ownership, and qualified-review evidence are reviewed and documented by the required qualified functions.
 7. Retention and deletion
    - Related canonical records: [OPEN-07](./REQUIREMENTS.md)
    - Question: When is soft deletion sufficient and when, if ever, is hard deletion allowed?
@@ -90,6 +92,6 @@ The Sprint 16 proposal does not resolve:
 - [OPEN-10](./REQUIREMENTS.md): applicable legal, regulatory, healthcare, or data-protection obligations.
 - [OPEN-12](./REQUIREMENTS.md): production target, named operational ownership, backups, incidents, or on-call responsibility.
 
-These remain independent stakeholder decisions after the bounded workforce approvals and Sprint 15 implementation for `OPEN-03`, `OPEN-04`, and `OPEN-05`. `OPEN-06` and `OPEN-08` remain without recorded outcomes, while `OPEN-02`, `OPEN-07`, `OPEN-10`, and `OPEN-12` have recorded `REVISE` outcomes but remain pending for implementation/governance selection.
+These remain independent stakeholder decisions after the bounded workforce approvals and Sprint 15 implementation for `OPEN-03`, `OPEN-04`, and `OPEN-05`. `OPEN-08` remains without a recorded outcome, while `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-10`, and `OPEN-12` have recorded `REVISE` outcomes but remain pending for implementation/governance selection.
 
 Sprint 15 remains synthetic-data-only. Production activation and real patient-data processing are blocked until the six Sprint 16 decisions, their dependencies, qualified reviews, named operational ownership, and the applicable [production gates](./PRODUCTION_READINESS_GOVERNANCE.md#production-and-real-patient-data-gates) receive genuine recorded approval. `OPEN-01`, `OPEN-09`, and `OPEN-11` also remain independent blockers for production scopes that use their healthcare, appointment, or reminder workflows.
