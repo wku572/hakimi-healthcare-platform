@@ -31,6 +31,7 @@ This file records unresolved stakeholder questions and the deferred remainder of
    - Related canonical records: [OPEN-06](./REQUIREMENTS.md)
    - Question: What audit events, retention, and review rules are required?
    - Sprint 16 proposal: [separate security and clinical audit event families](./PRODUCTION_READINESS_GOVERNANCE.md#open-06-security-and-clinical-audit-events).
+   - Evidence pack: [security and clinical audit evidence](./OPEN06_SECURITY_AND_CLINICAL_AUDIT_EVIDENCE.md).
    - Decision status: `OPEN DECISION`; approve, revise, or reject selection is `PENDING`.
 7. Retention and deletion
    - Related canonical records: [OPEN-07](./REQUIREMENTS.md)
