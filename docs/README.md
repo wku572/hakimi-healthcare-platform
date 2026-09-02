@@ -17,6 +17,7 @@ This directory contains the product baseline package for Hakimi / ሀኪሜ.
 - [OPEN02_PRIVACY_PURPOSE_AND_CONSENT_EVIDENCE.md](./OPEN02_PRIVACY_PURPOSE_AND_CONSENT_EVIDENCE.md) - synthetic-data-only privacy, consent, lawful-purpose, and minimum-necessary evidence pack for `OPEN-02` review
 - [OPEN06_SECURITY_AND_CLINICAL_AUDIT_EVIDENCE.md](./OPEN06_SECURITY_AND_CLINICAL_AUDIT_EVIDENCE.md) - synthetic-data-only security and clinical audit evidence pack for `OPEN-06` review
 - [OPEN07_RETENTION_DELETION_AND_LEGAL_HOLD_EVIDENCE.md](./OPEN07_RETENTION_DELETION_AND_LEGAL_HOLD_EVIDENCE.md) - synthetic-data-only retention, deletion, backup, and legal-hold evidence pack for `OPEN-07` review
+- [OPEN08_PATIENT_IDENTITY_AND_OWNERSHIP_EVIDENCE.md](./OPEN08_PATIENT_IDENTITY_AND_OWNERSHIP_EVIDENCE.md) - synthetic-data-only patient identity and multi-facility ownership evidence pack for `OPEN-08` review
 - [OPEN10_HYPOTHETICAL_OPERATING_MODEL.md](./OPEN10_HYPOTHETICAL_OPERATING_MODEL.md) - hypothetical synthetic-data-only operating-model and data-flow evidence pack for qualified `OPEN-10` review
 - [OPEN10_PROPOSED_DATA_INVENTORY.md](./OPEN10_PROPOSED_DATA_INVENTORY.md) - repository-reconciled proposed data inventory for qualified `OPEN-10` review
 - [OPEN10_HYPOTHETICAL_DATA_FLOW.md](./OPEN10_HYPOTHETICAL_DATA_FLOW.md) - hypothetical current/future flow and trust-boundary reconciliation for qualified `OPEN-10` review
