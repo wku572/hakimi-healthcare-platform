@@ -15,10 +15,13 @@
 | Field                               | Value                                                                                                                                                                                                                                                                                                                                                                                 |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Purpose                             | Repository-reconciled evidence package for `OPEN-08` patient identity, facility-scoped registration, duplicate handling, linking, merge/unmerge, provenance, demographic correction, representative authority, and multi-facility ownership                                                                                                                                           |
-| Decision effect                     | None; this document does not select `APPROVE`, `REVISE`, or `REJECT`, does not create identity resolution, and does not close `OPEN-08`                                                                                                                                                                                                                                               |
+| Decision effect                     | Records the product-owner `REVISE` outcome only; this document does not approve patient-identity policy, create identity resolution, or close `OPEN-08`                                                                                                                                                                                                                               |
 | Canonical decision type             | `OPEN DECISION`                                                                                                                                                                                                                                                                                                                                                                       |
 | Implementation/governance selection | `PENDING`                                                                                                                                                                                                                                                                                                                                                                             |
-| Recorded product-owner outcome      | `NOT RECORDED`                                                                                                                                                                                                                                                                                                                                                                        |
+| Recorded product-owner outcome      | `REVISE`                                                                                                                                                                                                                                                                                                                                                                              |
+| Decision date                       | 2026-09-02                                                                                                                                                                                                                                                                                                                                                                            |
+| Authority                           | Habte Selasie - Repository Owner and Product Decision Authority                                                                                                                                                                                                                                                                                                                       |
+| Evidence URL                        | [GitHub issue #41 OPEN-08 REVISE comment](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5507593372)                                                                                                                                                                                                                                                     |
 | Identity-resolution runtime         | `NOT IMPLEMENTED / NOT DETERMINED`                                                                                                                                                                                                                                                                                                                                                    |
 | Production steward or owner         | `NOT SELECTED` / `NOT DETERMINED`                                                                                                                                                                                                                                                                                                                                                     |
 | Production gates                    | `BLOCKED`                                                                                                                                                                                                                                                                                                                                                                             |
@@ -378,16 +381,16 @@ workflow.
 
 ## 29. Required Reviewer Functions And Evidence Gaps
 
-| Reviewer function                                    | Required evidence                                                                                                 | Assignment status                                              |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Patient administration/health-information management | MRN ownership, registration workflow, duplicate-review workflow, steward authority, merge/unmerge procedure       | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`          |
-| Clinical safety                                      | Patient-safety impact, misidentification risk, false-positive/false-negative handling, escalation and correction  | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`          |
-| Privacy/data protection                              | Minimum-necessary identity fields, notice, rights, representative authority, cross-facility disclosure boundaries | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`          |
-| Information security                                 | IDOR, enumeration, spoofing, unauthorized linking, account takeover, insider access, evidence integrity           | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`          |
-| Legal/regulatory                                     | Applicable identity, guardian, consent, records, disclosure, correction, retention, and cross-border rules        | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`          |
-| Records management                                   | Source evidence, aliases, merged records, unmerge records, retention, deletion, legal hold, backup disposition    | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`          |
-| Platform/operations                                  | Steward workflow operations, support boundaries, monitoring, recovery, backup/restore, production ownership       | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`          |
-| Product decision authority                           | Bounded outcome, rationale, limitations, dependencies, and non-authorization boundary                             | `REQUIRED EXTERNAL EVIDENCE`; authority outcome `NOT RECORDED` |
+| Reviewer function                                    | Required evidence                                                                                                 | Assignment status                                                         |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Patient administration/health-information management | MRN ownership, registration workflow, duplicate-review workflow, steward authority, merge/unmerge procedure       | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`                     |
+| Clinical safety                                      | Patient-safety impact, misidentification risk, false-positive/false-negative handling, escalation and correction  | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`                     |
+| Privacy/data protection                              | Minimum-necessary identity fields, notice, rights, representative authority, cross-facility disclosure boundaries | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`                     |
+| Information security                                 | IDOR, enumeration, spoofing, unauthorized linking, account takeover, insider access, evidence integrity           | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`                     |
+| Legal/regulatory                                     | Applicable identity, guardian, consent, records, disclosure, correction, retention, and cross-border rules        | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`                     |
+| Records management                                   | Source evidence, aliases, merged records, unmerge records, retention, deletion, legal hold, backup disposition    | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`                     |
+| Platform/operations                                  | Steward workflow operations, support boundaries, monitoring, recovery, backup/restore, production ownership       | `REQUIRED EXTERNAL EVIDENCE`; reviewer `NOT SELECTED`                     |
+| Product decision authority                           | Bounded outcome, rationale, limitations, dependencies, and non-authorization boundary                             | `REVISE` outcome recorded; required qualified evidence remains incomplete |
 
 ## 30. OPEN-08 APPROVE-Readiness Checklist
 
@@ -468,7 +471,7 @@ Outcome rules:
 | `OPEN-02` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Privacy, lawful-purpose, notice, consent, rights, and minimum-necessary evidence remains incomplete |
 | `OPEN-06` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Audit evidence remains incomplete; no audit runtime or approved audit policy exists                 |
 | `OPEN-07` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Retention, deletion, backup, and legal-hold evidence remains incomplete                             |
-| `OPEN-08` | `NOT RECORDED`                 | `OPEN DECISION`         | `PENDING`                           | Patient identity, duplicate, merge, and multi-facility ownership remain open                        |
+| `OPEN-08` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Patient identity, duplicate, merge, and multi-facility ownership evidence remains incomplete        |
 | `OPEN-10` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Qualified legal applicability and production facts remain incomplete                                |
 | `OPEN-12` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Deployment target and operational ownership remain incomplete                                       |
 
@@ -478,6 +481,47 @@ Production deployment remains `NOT AUTHORIZED`. Real patient-data processing rem
 national identifier, no master-patient-index product, no identity provider, no
 production steward, no merge authority, no cross-facility owner, no legal
 conclusion, no patient authentication, and no production implementation.
+
+## 33. Recorded OPEN-08 REVISE Outcome
+
+| Field                      | Value                                                                                                                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Outcome                    | `REVISE`                                                                                                                                                                                                                                    |
+| Decision date              | 2026-09-02                                                                                                                                                                                                                                  |
+| Authority                  | Habte Selasie - Repository Owner and Product Decision Authority                                                                                                                                                                             |
+| Evidence URL               | [GitHub issue #41 OPEN-08 REVISE comment](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5507593372)                                                                                                           |
+| Canonical decision type    | `OPEN DECISION`                                                                                                                                                                                                                             |
+| Completion/selection state | `PENDING`                                                                                                                                                                                                                                   |
+| Non-authorization boundary | This outcome does not approve patient-identity policy, identity proofing, matching, linking, merge, unmerge, cross-facility ownership, patient authentication, production deployment, real patient-data processing, or any production gate. |
+
+Rationale: this evidence package accurately separates platform UUID, facility MRN,
+registration, identity proofing, duplicate review, linking, merge/unmerge,
+provenance, representative authority, and cross-facility ownership. Qualified
+patient-administration, clinical-safety, privacy, security, legal,
+records-management, operational, and product evidence remains incomplete.
+
+`OPEN-08` must remain open and be reconsidered only after these required revisions
+are reviewed and documented by the required qualified functions:
+
+- identity-proofing evidence and assurance;
+- duplicate-candidate generation and review rules;
+- steward authority and escalation;
+- link, merge, and unmerge authority;
+- survivorship and alias handling;
+- field-level provenance and source authority;
+- demographic correction and dispute workflows;
+- representative, guardian, proxy, and delegated authority;
+- cross-facility ownership, write authority, and conflict resolution;
+- patient-safety controls;
+- audit-event and evidence requirements;
+- retention, deletion, backup, restoration, and legal-hold dependencies;
+- legal applicability;
+- operational ownership and recovery;
+- qualified-review evidence.
+
+Issue #41 remains open for follow-up evidence and reconsideration. Production
+deployment and real patient-data processing remain `NOT AUTHORIZED`, and all
+production gates remain `BLOCKED`.
 
 ## Patient-Related Evidence Classification Method
 

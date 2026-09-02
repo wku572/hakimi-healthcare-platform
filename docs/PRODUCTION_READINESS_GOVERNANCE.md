@@ -13,16 +13,16 @@ This document proposes controls and decision choices. It does not resolve an OPE
 
 ## Decision Governance
 
-Each decision is independent. Approval of one item does not approve its dependencies. A dated product-owner outcome may be `APPROVE`, `REVISE`, or `REJECT`; outcome authority and evidence must be recorded for any outcome, not only for approval. `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-10`, and `OPEN-12` now have product-owner authority and evidence for `REVISE`, while qualified external-review evidence and required implementation facts remain incomplete. Their implementation/governance selections remain `PENDING`, and production gates remain `BLOCKED`.
+Each decision is independent. Approval of one item does not approve its dependencies. A dated product-owner outcome may be `APPROVE`, `REVISE`, or `REJECT`; outcome authority and evidence must be recorded for any outcome, not only for approval. `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-08`, `OPEN-10`, and `OPEN-12` now have product-owner authority and evidence for `REVISE`, while qualified external-review evidence and required implementation facts remain incomplete. Their implementation/governance selections remain `PENDING`, and production gates remain `BLOCKED`.
 
-| Decision  | Independent subject                                                                  | Current status  | Recorded product-owner outcome | Accountable approval authority                                       | Required consultation                                                                                                    | Recorded selection |
-| --------- | ------------------------------------------------------------------------------------ | --------------- | ------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------ |
-| `OPEN-02` | Privacy, consent, lawful purpose, and minimum necessary access                       | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Privacy, clinical, security, and legal reviewers                                                                         | `PENDING`          |
-| `OPEN-06` | Security and clinical audit events, review, and evidence handling                    | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Security, clinical safety, privacy, records management, patient identity/administration, operations, and legal reviewers | `PENDING`          |
-| `OPEN-07` | Retention, archival, deletion, backup, and legal hold                                | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Privacy, records-management, clinical, operations, security, and legal reviewers                                         | `PENDING`          |
-| `OPEN-08` | Patient identity, duplicate resolution, linking, merge, and multi-facility ownership | `OPEN DECISION` | `NOT RECORDED`                 | Product Decision Authority                                           | Clinical safety, patient administration, privacy, security, and legal reviewers                                          | `PENDING`          |
-| `OPEN-10` | Applicable legal and regulatory requirements                                         | `OPEN DECISION` | `REVISE`                       | Product Decision Authority; approval requires qualified legal advice | Qualified legal, regulatory, privacy, clinical, and security reviewers                                                   | `PENDING`          |
-| `OPEN-12` | Deployment target and operational ownership                                          | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Service, platform, security, privacy, clinical safety, data, and legal stakeholders                                      | `PENDING`          |
+| Decision  | Independent subject                                                                  | Current status  | Recorded product-owner outcome | Accountable approval authority                                       | Required consultation                                                                                                         | Recorded selection |
+| --------- | ------------------------------------------------------------------------------------ | --------------- | ------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `OPEN-02` | Privacy, consent, lawful purpose, and minimum necessary access                       | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Privacy, clinical, security, and legal reviewers                                                                              | `PENDING`          |
+| `OPEN-06` | Security and clinical audit events, review, and evidence handling                    | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Security, clinical safety, privacy, records management, patient identity/administration, operations, and legal reviewers      | `PENDING`          |
+| `OPEN-07` | Retention, archival, deletion, backup, and legal hold                                | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Privacy, records-management, clinical, operations, security, and legal reviewers                                              | `PENDING`          |
+| `OPEN-08` | Patient identity, duplicate resolution, linking, merge, and multi-facility ownership | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Patient administration/HIM, clinical safety, privacy, security, legal, records management, operational, and product reviewers | `PENDING`          |
+| `OPEN-10` | Applicable legal and regulatory requirements                                         | `OPEN DECISION` | `REVISE`                       | Product Decision Authority; approval requires qualified legal advice | Qualified legal, regulatory, privacy, clinical, and security reviewers                                                        | `PENDING`          |
+| `OPEN-12` | Deployment target and operational ownership                                          | `OPEN DECISION` | `REVISE`                       | Product Decision Authority                                           | Service, platform, security, privacy, clinical safety, data, and legal stakeholders                                           | `PENDING`          |
 
 For each record, product-owner review must record exactly one outcome and attach dated outcome evidence:
 
@@ -30,7 +30,7 @@ For each record, product-owner review must record exactly one outcome and attach
 - `REVISE`: return exact changes, owners, and evidence needed before another review.
 - `REJECT`: record why the proposal is unsuitable and whether a replacement is required.
 
-The recorded product-owner outcomes for `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-10`, and `OPEN-12` are `REVISE`, but the implementation and governance selections remain `PENDING` because required revision evidence, implementation facts, and qualified external findings are incomplete. `OPEN-08` still has no recorded product-owner outcome.
+The recorded product-owner outcomes for `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-08`, `OPEN-10`, and `OPEN-12` are `REVISE`, but the implementation and governance selections remain `PENDING` because required revision evidence, implementation facts, and qualified external findings are incomplete.
 
 ### Related Decisions Outside Sprint 16
 
@@ -108,7 +108,7 @@ Rationale: the purpose-bound privacy proposal identifies the necessary privacy, 
 - exception handling;
 - dependent evidence reviewed and documented by the required qualified functions.
 
-Issue #41 remains open for follow-up evidence and the remaining Sprint 16 decisions. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
+Issue #41 remains open for follow-up evidence and reconsideration. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## OPEN-06: Security And Clinical Audit Events
 
@@ -194,7 +194,7 @@ Rationale: the merged `OPEN-06` evidence package distinguishes current privacy-m
 - exception and recovery handling;
 - named operational ownership and qualified-review evidence.
 
-Issue #41 remains open for follow-up evidence and the remaining Sprint 16 decisions. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
+Issue #41 remains open for follow-up evidence and reconsideration. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## OPEN-07: Retention, Archival, Deletion, Backup, And Legal Hold
 
@@ -278,7 +278,7 @@ Rationale: the retention, archival, deletion, backup, and legal-hold proposal id
 - downstream-recipient obligations;
 - deletion and destruction evidence reviewed and documented by the required qualified functions.
 
-Issue #41 remains open for follow-up evidence and the remaining Sprint 16 decisions. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
+Issue #41 remains open for follow-up evidence and reconsideration. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## OPEN-08: Patient Identity And Multi-Facility Ownership
 
@@ -327,6 +327,40 @@ Proposed duplicate-review states are `POTENTIAL`, `UNDER_REVIEW`, `LINKED`, `NOT
 | `REJECT`  | Record the replacement identity and facility-ownership model.                                                                 |
 
 Recorded selection: `PENDING`.
+
+### Product-Owner Review Outcome
+
+| Field                      | Value                                                                                                                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Outcome                    | `REVISE`                                                                                                                                                                                                                                    |
+| Decision date              | 2026-09-02                                                                                                                                                                                                                                  |
+| Authority                  | Habte Selasie - Repository Owner and Product Decision Authority                                                                                                                                                                             |
+| Evidence URL               | [GitHub issue #41 OPEN-08 REVISE comment](https://github.com/wku572/hakimi-healthcare-platform/issues/41#issuecomment-5507593372)                                                                                                           |
+| Canonical decision type    | `OPEN DECISION`                                                                                                                                                                                                                             |
+| Completion/selection state | `PENDING`                                                                                                                                                                                                                                   |
+| Non-authorization boundary | This outcome does not approve patient-identity policy, identity proofing, matching, linking, merge, unmerge, cross-facility ownership, patient authentication, production deployment, real patient-data processing, or any production gate. |
+
+Rationale: the `OPEN-08` evidence package accurately separates platform UUID, facility MRN, registration, identity proofing, duplicate review, linking, merge/unmerge, provenance, representative authority, and cross-facility ownership, but qualified patient-administration, clinical-safety, privacy, security, legal, records-management, operational, and product evidence remains incomplete.
+
+`OPEN-08` must remain open and be reconsidered only after these required revisions are reviewed and documented by the required qualified functions:
+
+- identity-proofing evidence and assurance;
+- duplicate-candidate generation and review rules;
+- steward authority and escalation;
+- link, merge, and unmerge authority;
+- survivorship and alias handling;
+- field-level provenance and source authority;
+- demographic correction and dispute workflows;
+- representative, guardian, proxy, and delegated authority;
+- cross-facility ownership, write authority, and conflict resolution;
+- patient-safety controls;
+- audit-event and evidence requirements;
+- retention, deletion, backup, restoration, and legal-hold dependencies;
+- legal applicability;
+- operational ownership and recovery;
+- qualified-review evidence.
+
+Issue #41 remains open for follow-up evidence and reconsideration. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## OPEN-10: Legal And Regulatory Applicability
 
@@ -398,7 +432,7 @@ Rationale: the repository now contains a hypothetical operating model, proposed 
 - approved processing purposes and dependencies from `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-08`, and `OPEN-12`;
 - applicable jurisdiction, regulator, registration, transfer, contractual, and legal-obligation findings.
 
-Issue #41 remains open for follow-up evidence and the other Sprint 16 decisions. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
+Issue #41 remains open for follow-up evidence and reconsideration. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## OPEN-12: Deployment Target And Operational Ownership
 
@@ -479,7 +513,7 @@ Rationale: the repository has a local container, Compose, health, CI, supply-cha
 - release, migration, rollback, emergency-change, and production-acceptance authority;
 - qualified privacy, security, clinical, operational, and legal review evidence.
 
-Issue #41 remains open for follow-up evidence and the remaining Sprint 16 decisions. No production target, provider, architecture, region, owner, RACI, service objective, recovery objective, or operational model is selected. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
+Issue #41 remains open for follow-up evidence and reconsideration. No production target, provider, architecture, region, owner, RACI, service objective, recovery objective, or operational model is selected. Production deployment and real patient-data processing remain `NOT AUTHORIZED`, and all production gates remain `BLOCKED`.
 
 ## Data Classification And Handling Matrix
 
