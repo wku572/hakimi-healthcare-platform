@@ -47,6 +47,7 @@ This file records unresolved stakeholder questions and the deferred remainder of
    - Related canonical records: [OPEN-08](./REQUIREMENTS.md)
    - Question: What patient identity, merge, and cross-facility registration rules should apply?
    - Sprint 16 proposal: [immutable platform identity, facility MRNs, steward-reviewed linking, and non-destructive merge](./PRODUCTION_READINESS_GOVERNANCE.md#open-08-patient-identity-and-multi-facility-ownership).
+   - Evidence pack: [patient identity and multi-facility ownership evidence](./OPEN08_PATIENT_IDENTITY_AND_OWNERSHIP_EVIDENCE.md).
    - Decision status: `OPEN DECISION`; approve, revise, or reject selection is `PENDING`.
 9. Appointment business rules
    - Related canonical records: [OPEN-09](./REQUIREMENTS.md)
