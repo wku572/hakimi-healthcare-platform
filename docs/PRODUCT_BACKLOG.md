@@ -9,6 +9,7 @@ The items below are deferred on purpose. They are not baseline requirements yet.
 - Decide the remaining healthcare, privacy, legal, audit, retention, patient-identity, reminder, and deployment baseline captured in [OPEN_DECISIONS.md](./OPEN_DECISIONS.md).
 - Keep identity-role assignment administration, patient-role activation, patient authentication, patient MFA, patient recovery, patient self-service, cross-facility patient writes, and global patient deactivation blocked until their governing decisions are approved.
 - Continue the six independent decision packets in the [Sprint 16 production-readiness governance proposal](./PRODUCTION_READINESS_GOVERNANCE.md). `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-08`, `OPEN-10`, and `OPEN-12` have product-owner review outcomes of `REVISE` and must be reconsidered after their required evidence exists.
+- Use the [Sprint 17 governance remediation plan](./SPRINT_17_GOVERNANCE_REMEDIATION_PLAN.md) to collect and reconcile the missing evidence before product-owner reconsideration.
 - Keep production deployment and real patient-data processing blocked pending `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-08`, `OPEN-10`, `OPEN-12`, applicable review, and resolution of the patient-identity dependency in `OPEN-08`.
 
 ## Future Product Work
