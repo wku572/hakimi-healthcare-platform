@@ -22,6 +22,7 @@ This directory contains the product baseline package for Hakimi / ሀኪሜ.
 - [OPEN10_PROPOSED_DATA_INVENTORY.md](./OPEN10_PROPOSED_DATA_INVENTORY.md) - repository-reconciled proposed data inventory for qualified `OPEN-10` review
 - [OPEN10_HYPOTHETICAL_DATA_FLOW.md](./OPEN10_HYPOTHETICAL_DATA_FLOW.md) - hypothetical current/future flow and trust-boundary reconciliation for qualified `OPEN-10` review
 - [OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md](./OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md) - blank evidence-collection questionnaire for qualified `OPEN-10` legal and regulatory review
+- [SPRINT_17_GOVERNANCE_REMEDIATION_PLAN.md](./SPRINT_17_GOVERNANCE_REMEDIATION_PLAN.md) - documentation-only remediation and evidence-collection plan for the six Sprint 16 `REVISE` outcomes
 - [OPERATIONS_RUNBOOK.md](./OPERATIONS_RUNBOOK.md) - privacy-safe runtime event catalogue and diagnostic procedures
 
 ## Validation

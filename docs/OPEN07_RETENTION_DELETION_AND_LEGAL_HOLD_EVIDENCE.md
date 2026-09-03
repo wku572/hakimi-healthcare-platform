@@ -450,9 +450,9 @@ Outcome rules:
 | Decision  | Recorded product-owner outcome | Canonical decision type | Implementation/governance selection | Notes                                                                                                          |
 | --------- | ------------------------------ | ----------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `OPEN-02` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Privacy, lawful purpose, notice, consent, rights, and minimum-necessary evidence remains incomplete            |
-| `OPEN-06` | `NOT RECORDED`                 | `OPEN DECISION`         | `PENDING`                           | Audit events, store, integrity, review, and retention remain open                                              |
+| `OPEN-06` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Audit events, store, integrity, review, and retention evidence remains incomplete                              |
 | `OPEN-07` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Product-owner revision requested; no duration, trigger, method, hold rule, or production authority is selected |
-| `OPEN-08` | `NOT RECORDED`                 | `OPEN DECISION`         | `PENDING`                           | Patient identity, duplicate, merge, and multi-facility ownership remain open                                   |
+| `OPEN-08` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Patient identity, duplicate, merge, and multi-facility ownership evidence remains incomplete                   |
 | `OPEN-10` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Qualified legal applicability and production facts remain incomplete                                           |
 | `OPEN-12` | `REVISE`                       | `OPEN DECISION`         | `PENDING`                           | Deployment target and operational ownership remain incomplete                                                  |
 

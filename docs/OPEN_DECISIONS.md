@@ -2,6 +2,8 @@
 
 This file records unresolved stakeholder questions and the deferred remainder of decisions approved with revisions.
 
+The [Sprint 17 governance remediation plan](./SPRINT_17_GOVERNANCE_REMEDIATION_PLAN.md) organizes evidence collection for the six Sprint 16 `REVISE` outcomes without changing any decision outcome, selection, or production gate.
+
 ## Open Items
 
 1. Healthcare and business rules
@@ -98,3 +100,5 @@ The Sprint 16 proposal does not resolve:
 These remain independent stakeholder decisions after the bounded workforce approvals and Sprint 15 implementation for `OPEN-03`, `OPEN-04`, and `OPEN-05`. `OPEN-02`, `OPEN-06`, `OPEN-07`, `OPEN-08`, `OPEN-10`, and `OPEN-12` have recorded `REVISE` outcomes but remain pending for implementation/governance selection.
 
 Sprint 15 remains synthetic-data-only. Production activation and real patient-data processing are blocked until the six Sprint 16 decisions, their dependencies, qualified reviews, named operational ownership, and the applicable [production gates](./PRODUCTION_READINESS_GOVERNANCE.md#production-and-real-patient-data-gates) receive genuine recorded approval. `OPEN-01`, `OPEN-09`, and `OPEN-11` also remain independent blockers for production scopes that use their healthcare, appointment, or reminder workflows.
+
+Use the [Sprint 17 remediation plan](./SPRINT_17_GOVERNANCE_REMEDIATION_PLAN.md) to track evidence collection and readiness for product-owner reconsideration.
