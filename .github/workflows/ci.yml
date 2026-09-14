@@ -71,14 +71,17 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      - name: Test npm audit retry helper
+        run: bash .github/scripts/npm-audit-with-retry.test.sh
+
       - name: Install locked dependencies
         run: npm ci
 
       - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
+        run: bash .github/scripts/npm-audit-with-retry.sh --omit=dev --audit-level=high
 
       - name: Audit all dependencies
-        run: npm audit --audit-level=high
+        run: bash .github/scripts/npm-audit-with-retry.sh --audit-level=high
 
   postgres-integration:
     name: PostgreSQL integration
