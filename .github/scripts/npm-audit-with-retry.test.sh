@@ -98,7 +98,7 @@ run_case() {
     FAKE_NPM_ARGS_FILE="${args_file}" \
     FAKE_NPM_SCENARIO="${scenario}" \
     NPM_AUDIT_RETRY_DELAY_SECONDS=0 \
-    "${helper}" "$@" >"${stdout_file}" 2>"${stderr_file}"
+    bash "${helper}" "$@" >"${stdout_file}" 2>"${stderr_file}"
   local status=$?
   set -e
 
