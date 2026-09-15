@@ -76,6 +76,28 @@ The API expects:
    npm run dev
    ```
 
+## Run The Portfolio Demo
+
+The web app includes a reviewer-facing `Synthetic Demo` mode for the Hakimi
+appointment workflow. It uses deterministic local fixtures only, so reviewers can
+experience the product concept without configuring OIDC, provisioning workforce
+access, starting PostgreSQL, or sending requests to the real API.
+
+```bash
+npm install
+npm run dev --workspace @hakimi/web
+```
+
+Open the Vite URL shown in the terminal, usually
+`http://localhost:5173`. The demo lets reviewers view a fictional facility,
+choose a fictional practitioner and patient, select a slot, schedule the
+appointment in frontend state, and see confirmation plus reminder status.
+
+All people, facilities, appointments, and reminders shown in this mode are
+fictional. The appointment exists only in the current browser session; it is not
+persisted, it does not weaken the real `/api/v1` workforce authorization
+boundary, and it is not connected to a production healthcare service.
+
 ## Containerized Deployment
 
 The repository now includes a production-shaped container stack built from one reusable application image.
