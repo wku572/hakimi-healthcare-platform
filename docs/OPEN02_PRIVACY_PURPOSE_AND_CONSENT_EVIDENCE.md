@@ -28,7 +28,7 @@ This document addresses [OPEN-02](./REQUIREMENTS.md): privacy, consent, lawful p
 
 The repository currently implements a workforce-only synthetic-data access-control boundary. Patient authentication, patient self-service, global patient deactivation, production communications, production deployment, real patient-data processing, legal applicability, retention schedules, audit-event policy, and deployment ownership remain unresolved or blocked by existing governance records.
 
-Detailed Sprint 17 purpose and field evidence for `S17-OPEN02-01` and `S17-OPEN02-07` is maintained in [OPEN02_BOUNDED_PURPOSE_AND_FIELD_MATRIX.md](./OPEN02_BOUNDED_PURPOSE_AND_FIELD_MATRIX.md). That artifact develops reviewable evidence but does not change the `IN PROGRESS` remediation status, approve `OPEN-02`, or authorize implementation, production deployment, or real patient-data processing.
+Detailed Sprint 17 purpose and field evidence for `S17-OPEN02-01` and `S17-OPEN02-07` is maintained in [OPEN02_BOUNDED_PURPOSE_AND_FIELD_MATRIX.md](./OPEN02_BOUNDED_PURPOSE_AND_FIELD_MATRIX.md). That artifact records submission-ready evidence for review but does not approve `OPEN-02`, complete the remediation items, or authorize implementation, production deployment, or real patient-data processing.
 
 ## Known Project And Repository Facts
 
