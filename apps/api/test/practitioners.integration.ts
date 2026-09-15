@@ -39,7 +39,7 @@ function trackAssignmentId(id: string) {
   createdAssignmentIds.push(id);
 }
 
-describe.sequential('PostgreSQL practitioner integration', () => {
+describe('PostgreSQL practitioner integration', () => {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
   const readinessCheck = createDatabaseReadinessCheck(pool);
