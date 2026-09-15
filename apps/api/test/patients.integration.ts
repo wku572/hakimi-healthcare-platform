@@ -61,7 +61,7 @@ async function deleteTrackedRows(pool: ReturnType<typeof createPostgresPool>) {
   }
 }
 
-describe.sequential('PostgreSQL patient integration', () => {
+describe('PostgreSQL patient integration', () => {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
   const readinessCheck = createDatabaseReadinessCheck(pool);

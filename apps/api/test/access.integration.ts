@@ -28,7 +28,7 @@ const sessionHash = crypto
 const facilityCode = `ACCESS-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 const otherFacilityCode = `OTHER-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 
-describe.sequential('PostgreSQL workforce access integration', () => {
+describe('PostgreSQL workforce access integration', () => {
   const environment = loadEnvironment();
   const pool = createPostgresPool(environment.DATABASE_URL);
   const provisioning = createProvisioningService(pool);
@@ -323,7 +323,7 @@ describe.sequential('PostgreSQL workforce access integration', () => {
   });
 });
 
-describe.sequential('target-specific authorization linearization', () => {
+describe('target-specific authorization linearization', () => {
   const environment = loadEnvironment();
   const pool = createPostgresPool(environment.DATABASE_URL);
   const provisioning = createProvisioningService(pool);

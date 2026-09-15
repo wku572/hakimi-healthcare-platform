@@ -28,7 +28,7 @@ function trackFacilityId(id: string) {
   createdFacilityIds.push(id);
 }
 
-describe.sequential('PostgreSQL facility integration', () => {
+describe('PostgreSQL facility integration', () => {
   const env = loadEnvironment();
   const pool = createPostgresPool(env.DATABASE_URL);
   const readinessCheck = createDatabaseReadinessCheck(pool);
