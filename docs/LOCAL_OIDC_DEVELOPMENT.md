@@ -1,7 +1,8 @@
 # Local OIDC Development Provider
 
-This document describes the Phase 1 local identity-provider foundation for
-Hakimi workforce authentication development.
+This document describes the Phase 1 local identity-provider foundation and
+Phase 2 PostgreSQL-backed synthetic workforce authorization data for Hakimi
+workforce authentication development.
 
 Status:
 
@@ -10,7 +11,7 @@ Status:
 - Not approved for production.
 - No patient authentication or patient self-service.
 - No production MFA claim.
-- PostgreSQL workforce actor and role provisioning remains a later phase.
+- PostgreSQL provisioning is development-only and must be explicitly enabled.
 - React login, logout, token storage, and protected routing remain a later phase.
 
 ## Provider
@@ -87,6 +88,7 @@ OIDC_JWKS_URI=http://localhost:8080/realms/hakimi-local/protocol/openid-connect/
 OIDC_ALLOWED_ALGORITHMS=RS256
 OIDC_REQUIRED_ACR_VALUES=workforce-mfa
 OIDC_CLOCK_TOLERANCE_SECONDS=30
+HAKIMI_ENABLE_LOCAL_DEMO_PROVISIONING=true
 ```
 
 The production-shaped Compose `api` service still runs with
@@ -94,6 +96,35 @@ The production-shaped Compose `api` service still runs with
 non-HTTPS JWKS URLs in production, except for non-production loopback
 development. Run the API on the host for this Phase 1 local OIDC diagnostic
 path, or provide a production-appropriate HTTPS issuer and JWKS.
+
+## PostgreSQL-Backed Synthetic Authorization Data
+
+After PostgreSQL is running and migrations are applied, provision the fictional
+local demo actor and scheduling records with:
+
+```bash
+npm run access:provision:local-demo
+```
+
+The command refuses to run when `NODE_ENV=production` and also refuses to run
+unless `HAKIMI_ENABLE_LOCAL_DEMO_PROVISIONING=true` is set in the caller
+environment or private `.env` file.
+
+Provisioned records are deterministic and idempotent:
+
+- workforce actor `Demo Scheduler`, mapped to issuer
+  `http://localhost:8080/realms/hakimi-local` and OIDC subject
+  `00000000-0000-4000-8000-0000000000d5`;
+- `SCHEDULER` role scoped to `Addis Family Clinic`;
+- `Addis Family Clinic` plus one out-of-scope fictional facility for isolation
+  checks;
+- fictional practitioners and practitioner-facility assignments;
+- fictional patients and facility registrations;
+- one future scheduled appointment for the in-scope facility.
+
+The command does not create a workforce session. Sessions remain
+post-authentication records created by the existing API authorization boundary
+when a valid OIDC bearer token reaches a protected route.
 
 ## Discovery And JWKS Checks
 
@@ -145,7 +176,8 @@ Decode claims locally only to confirm:
 - `auth_time` is present;
 - `acr` is `workforce-mfa`.
 
-Until Phase 2 provisions a matching `workforce_actors` row and facility-scoped
-role assignment in PostgreSQL, the API should reject an otherwise valid token at
-the authorization-candidate boundary with the existing generic
-`AUTHENTICATION_REQUIRED` response.
+After Phase 2 provisioning, the same valid token should resolve to the
+PostgreSQL-backed `Demo Scheduler` actor and authorize facility-scoped scheduler
+operations. Unknown OIDC subjects, inactive actors, missing roles, and
+out-of-scope facility requests continue to fail through the existing
+privacy-preserving authentication and authorization responses.

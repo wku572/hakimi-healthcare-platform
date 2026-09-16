@@ -202,9 +202,18 @@ environment overrides.
 
 This provider is not production identity infrastructure. The local
 `workforce-mfa` `acr` value is compatibility evidence only and is not a
-production MFA assertion. PostgreSQL workforce actor and facility-scope
-provisioning remains a later phase, and React login/logout is not implemented
-yet. See [docs/LOCAL_OIDC_DEVELOPMENT.md](docs/LOCAL_OIDC_DEVELOPMENT.md).
+production MFA assertion. Phase 2 adds an explicit opt-in command for
+PostgreSQL-backed fictional demo records:
+
+```bash
+HAKIMI_ENABLE_LOCAL_DEMO_PROVISIONING=true npm run access:provision:local-demo
+```
+
+The command refuses `NODE_ENV=production`, maps the real local Keycloak `sub` to
+a PostgreSQL workforce actor, and provisions fictional facility, practitioner,
+patient, registration, and appointment records for local API testing. It does
+not run automatically and does not implement React login/logout. See
+[docs/LOCAL_OIDC_DEVELOPMENT.md](docs/LOCAL_OIDC_DEVELOPMENT.md).
 
 ### Controlled Provisioning
 
