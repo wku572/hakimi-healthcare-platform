@@ -13,6 +13,38 @@ x-app-runtime: &app-runtime
     - /tmp
 
 services:
+  oidc:
+    image: quay.io/keycloak/keycloak:26.3.5
+    profiles:
+      - local-oidc
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${LOCAL_OIDC_PORT:-8080}:8080'
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${LOCAL_OIDC_ADMIN_USERNAME:-hakimi-local-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${LOCAL_OIDC_ADMIN_PASSWORD:-change-me-local-admin-only}
+    command:
+      [
+        'start-dev',
+        '--import-realm',
+        '--http-port=8080',
+        '--health-enabled=true',
+        '--hostname=localhost',
+        '--hostname-strict=false',
+      ]
+    volumes:
+      - ./infrastructure/local-oidc/hakimi-local-realm.json:/opt/keycloak/data/import/hakimi-local-realm.json:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'bash -ec ''exec 3<>/dev/tcp/127.0.0.1/9000; printf "GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3; grep -q "200" <&3''',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped

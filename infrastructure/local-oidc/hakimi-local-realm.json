@@ -1,0 +1,89 @@
+{
+  "realm": "hakimi-local",
+  "enabled": true,
+  "displayName": "Hakimi Local Development",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "sslRequired": "external",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 28800,
+  "clients": [
+    {
+      "clientId": "hakimi-web",
+      "name": "Hakimi Local Web",
+      "description": "Development-only browser client for local Authorization Code with PKCE testing.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/auth/callback",
+        "http://127.0.0.1:5173/auth/callback"
+      ],
+      "webOrigins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/##http://127.0.0.1:5173/",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "hakimi-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "included.custom.audience": "hakimi-api"
+          }
+        },
+        {
+          "name": "hakimi-development-acr",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "true",
+            "claim.name": "acr",
+            "claim.value": "workforce-mfa",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "00000000-0000-4000-8000-0000000000d5",
+      "username": "demo.scheduler",
+      "enabled": true,
+      "email": "demo.scheduler@example.test",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Scheduler",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "change-me-local-demo-only",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
+    }
+  ]
+}

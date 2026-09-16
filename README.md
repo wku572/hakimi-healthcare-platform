@@ -184,6 +184,28 @@ The approved workforce roles are `PLATFORM_ADMIN`, `FACILITY_ADMIN`, `SCHEDULER`
 
 All Sprint 15 use is limited to fictional, synthetic records. The implementation does not authorize production deployment or processing of real patient data.
 
+### Local OIDC Development Provider
+
+Phase 1 of the authenticated local development path adds a deterministic
+development-only Keycloak realm for workforce OIDC testing:
+
+```bash
+docker compose --profile local-oidc up -d oidc
+```
+
+The imported realm is `hakimi-local`, the public browser client is
+`hakimi-web`, and the fictional development user is `Demo Scheduler`
+(`demo.scheduler`). The provider emits tokens compatible with the API verifier's
+existing issuer, audience, `sid`, `auth_time`, and development `acr`
+requirements when the API is run on the host with the documented loopback OIDC
+environment overrides.
+
+This provider is not production identity infrastructure. The local
+`workforce-mfa` `acr` value is compatibility evidence only and is not a
+production MFA assertion. PostgreSQL workforce actor and facility-scope
+provisioning remains a later phase, and React login/logout is not implemented
+yet. See [docs/LOCAL_OIDC_DEVELOPMENT.md](docs/LOCAL_OIDC_DEVELOPMENT.md).
+
 ### Controlled Provisioning
 
 Workforce authority is managed only through the local non-HTTP command:

@@ -25,6 +25,7 @@ This directory contains the product baseline package for Hakimi / ሀኪሜ.
 - [OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md](./OPEN10_QUALIFIED_LEGAL_REVIEW_QUESTIONNAIRE.md) - blank evidence-collection questionnaire for qualified `OPEN-10` legal and regulatory review
 - [SPRINT_17_GOVERNANCE_REMEDIATION_PLAN.md](./SPRINT_17_GOVERNANCE_REMEDIATION_PLAN.md) - documentation-only remediation and evidence-collection plan for the six Sprint 16 `REVISE` outcomes
 - [OPERATIONS_RUNBOOK.md](./OPERATIONS_RUNBOOK.md) - privacy-safe runtime event catalogue and diagnostic procedures
+- [LOCAL_OIDC_DEVELOPMENT.md](./LOCAL_OIDC_DEVELOPMENT.md) - development-only Keycloak realm, client, and diagnostic Authorization Code with PKCE setup for local workforce OIDC testing
 
 ## Validation
 
