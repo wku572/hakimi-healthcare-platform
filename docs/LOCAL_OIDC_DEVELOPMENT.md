@@ -12,7 +12,8 @@ Status:
 - No patient authentication or patient self-service.
 - No production MFA claim.
 - PostgreSQL provisioning is development-only and must be explicitly enabled.
-- React login, logout, token storage, and protected routing remain a later phase.
+- React login/logout is available only for the minimal workforce shell.
+- Appointment scheduling UI integration remains a later phase.
 
 ## Provider
 
@@ -89,6 +90,11 @@ OIDC_ALLOWED_ALGORITHMS=RS256
 OIDC_REQUIRED_ACR_VALUES=workforce-mfa
 OIDC_CLOCK_TOLERANCE_SECONDS=30
 HAKIMI_ENABLE_LOCAL_DEMO_PROVISIONING=true
+VITE_OIDC_ISSUER=http://localhost:8080/realms/hakimi-local
+VITE_OIDC_CLIENT_ID=hakimi-web
+VITE_OIDC_REDIRECT_URI=http://localhost:5173/auth/callback
+VITE_OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:5173/
+VITE_OIDC_SCOPE=openid
 ```
 
 The production-shaped Compose `api` service still runs with
@@ -125,6 +131,33 @@ Provisioned records are deterministic and idempotent:
 The command does not create a workforce session. Sessions remain
 post-authentication records created by the existing API authorization boundary
 when a valid OIDC bearer token reaches a protected route.
+
+## React Workforce Shell
+
+Run the web application with:
+
+```bash
+npm run dev --workspace @hakimi/web
+```
+
+The unauthenticated screen redirects to Keycloak using Authorization Code with
+PKCE `S256` through the public `hakimi-web` client. Hakimi does not collect the
+password. After callback processing, the browser URL is replaced so the
+authorization code and state are not left visible in the address bar.
+
+The shell keeps access and refresh tokens in memory only. It does not write
+tokens to `localStorage`, `sessionStorage`, IndexedDB, JavaScript-controlled
+cookies, logs, or analytics. Browser-decoded claims are display hints only; API
+authorization remains server-derived from the verified bearer token and
+PostgreSQL workforce actor, role, session, and facility scope.
+
+Because tokens are not persisted, a full page reload may return to the signed-out
+screen or require OIDC initialization again. This is expected for the local
+development shell and preserves the no-token-persistence boundary.
+
+Use **Logout** to clear local in-memory authentication state and invoke the OIDC
+provider end-session flow. Local Keycloak may display its own logout
+confirmation screen before redirecting back to the Hakimi shell.
 
 ## Discovery And JWKS Checks
 

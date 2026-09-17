@@ -212,7 +212,12 @@ HAKIMI_ENABLE_LOCAL_DEMO_PROVISIONING=true npm run access:provision:local-demo
 The command refuses `NODE_ENV=production`, maps the real local Keycloak `sub` to
 a PostgreSQL workforce actor, and provisions fictional facility, practitioner,
 patient, registration, and appointment records for local API testing. It does
-not run automatically and does not implement React login/logout. See
+not run automatically.
+
+Phase 3 adds a minimal React workforce shell that redirects to the local
+Keycloak provider using Authorization Code with PKCE. Tokens are kept in memory
+only, so a full browser reload may require renewed OIDC initialization or
+sign-in. Appointment scheduling UI integration remains a later phase. See
 [docs/LOCAL_OIDC_DEVELOPMENT.md](docs/LOCAL_OIDC_DEVELOPMENT.md).
 
 ### Controlled Provisioning
