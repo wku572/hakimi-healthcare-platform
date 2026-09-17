@@ -95,6 +95,7 @@ VITE_OIDC_CLIENT_ID=hakimi-web
 VITE_OIDC_REDIRECT_URI=http://localhost:5173/auth/callback
 VITE_OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:5173/
 VITE_OIDC_SCOPE=openid
+VITE_HAKIMI_API_BASE_URL=/api/v1
 ```
 
 The production-shaped Compose `api` service still runs with
@@ -158,6 +159,12 @@ development shell and preserves the no-token-persistence boundary.
 Use **Logout** to clear local in-memory authentication state and invoke the OIDC
 provider end-session flow. Local Keycloak may display its own logout
 confirmation screen before redirecting back to the Hakimi shell.
+
+After sign-in, the local staff scheduling workspace uses the Vite development
+proxy at `/api/v1` to call the existing protected API with the in-memory bearer
+token. Facility, patient, and practitioner records come from PostgreSQL-backed
+API responses. Appointment availability and appointment creation remain outside
+this phase.
 
 ## Discovery And JWKS Checks
 

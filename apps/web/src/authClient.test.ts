@@ -12,6 +12,7 @@ const config = {
 
 function createUser(overrides: Partial<User> = {}) {
   return {
+    access_token: 'fresh-access-token',
     expired: false,
     expires_at: 123456789,
     profile: {
@@ -97,6 +98,69 @@ describe('workforce auth client', () => {
     await expect(client.refresh()).resolves.toBeNull();
 
     expect(manager.removeUser).toHaveBeenCalledOnce();
+  });
+
+  it('returns an existing in-memory access token when it is not near expiry', async () => {
+    const manager = createManager();
+    manager.getUser.mockResolvedValueOnce(
+      createUser({ expires_at: Math.floor(Date.now() / 1000) + 300 }),
+    );
+    const client = createWorkforceAuthClient(
+      config,
+      () => manager as unknown as UserManager,
+    );
+
+    await expect(client.getAccessToken()).resolves.toBe('fresh-access-token');
+
+    expect(manager.signinSilent).not.toHaveBeenCalled();
+  });
+
+  it('refreshes before returning a near-expiry access token', async () => {
+    const manager = createManager();
+    manager.getUser.mockResolvedValueOnce(
+      createUser({
+        access_token: 'stale-access-token',
+        expires_at: Math.floor(Date.now() / 1000) + 10,
+      }),
+    );
+    manager.signinSilent.mockResolvedValueOnce(
+      createUser({
+        access_token: 'refreshed-access-token',
+        expires_at: Math.floor(Date.now() / 1000) + 300,
+      }),
+    );
+    const client = createWorkforceAuthClient(
+      config,
+      () => manager as unknown as UserManager,
+    );
+
+    await expect(client.getAccessToken()).resolves.toBe(
+      'refreshed-access-token',
+    );
+  });
+
+  it('shares one concurrent refresh attempt', async () => {
+    const manager = createManager();
+    manager.getUser.mockResolvedValue(
+      createUser({
+        access_token: 'stale-access-token',
+        expires_at: Math.floor(Date.now() / 1000) + 10,
+      }),
+    );
+    manager.signinSilent.mockResolvedValue(
+      createUser({
+        access_token: 'refreshed-access-token',
+        expires_at: Math.floor(Date.now() / 1000) + 300,
+      }),
+    );
+    const client = createWorkforceAuthClient(
+      config,
+      () => manager as unknown as UserManager,
+    );
+
+    await Promise.all([client.getAccessToken(), client.getAccessToken()]);
+
+    expect(manager.signinSilent).toHaveBeenCalledOnce();
   });
 
   it('clears local authentication state before logout redirect', async () => {

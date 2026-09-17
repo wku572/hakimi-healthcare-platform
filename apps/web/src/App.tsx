@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import type { HealthcareFacility, Patient, Practitioner } from '@hakimi/shared';
 import type { WorkforceAuthClient, WorkforceUserHint } from './authClient';
 import { createWorkforceAuthClient } from './authClient';
 import { loadWorkforceAuthConfig } from './authConfig';
+import { loadHakimiApiConfig } from './apiConfig';
+import {
+  createHakimiApiClient,
+  HakimiApiError,
+  type HakimiApiClient,
+} from './hakimiApiClient';
 
 type AuthStatus =
   | { state: 'loading' }
@@ -9,14 +16,29 @@ type AuthStatus =
   | { state: 'authenticated'; user: WorkforceUserHint }
   | { state: 'error'; message: string };
 
+type LoadState<T> =
+  | { state: 'idle' }
+  | { state: 'loading' }
+  | { state: 'success'; data: T }
+  | { state: 'empty' }
+  | { state: 'error'; message: string };
+
 type AppProps = Readonly<{
   authClient?: WorkforceAuthClient;
+  apiClient?: HakimiApiClient;
   initialPath?: string;
 }>;
+
+const emptyPatientResults: LoadState<Patient[]> = { state: 'idle' };
 
 function createDefaultAuthClient(): WorkforceAuthClient {
   const config = loadWorkforceAuthConfig(import.meta.env);
   return createWorkforceAuthClient(config);
+}
+
+function createDefaultApiClient(authClient: WorkforceAuthClient) {
+  const config = loadHakimiApiConfig(import.meta.env);
+  return createHakimiApiClient(config, authClient);
 }
 
 function isCallbackPath(path: string) {
@@ -29,7 +51,437 @@ function authErrorMessage(error: unknown) {
     : 'Authentication did not complete.';
 }
 
-export default function App({ authClient, initialPath }: AppProps) {
+function formatPersonName(person: {
+  firstName: string;
+  middleName?: string | null;
+  lastName?: string | null;
+}) {
+  return [person.firstName, person.middleName, person.lastName]
+    .filter(Boolean)
+    .join(' ');
+}
+
+function getApiErrorMessage(error: unknown) {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return null;
+  }
+
+  if (error instanceof HakimiApiError) {
+    return error.message;
+  }
+
+  return 'Unable to load local Hakimi data.';
+}
+
+function registrationForFacility(patient: Patient, facilityId: string) {
+  return patient.registrations.find(
+    (registration) => registration.facilityId === facilityId,
+  );
+}
+
+function ProtectedSchedulingWorkspace({
+  apiClient,
+  onSessionExpired,
+  user,
+}: Readonly<{
+  apiClient: HakimiApiClient;
+  onSessionExpired(): void;
+  user: WorkforceUserHint;
+}>) {
+  const [facilityState, setFacilityState] = useState<
+    LoadState<HealthcareFacility[]>
+  >({ state: 'loading' });
+  const [practitionerState, setPractitionerState] = useState<
+    LoadState<Practitioner[]>
+  >({ state: 'idle' });
+  const [patientState, setPatientState] =
+    useState<LoadState<Patient[]>>(emptyPatientResults);
+  const [selectedPatientId, setSelectedPatientId] = useState('');
+  const [selectedPractitionerId, setSelectedPractitionerId] = useState('');
+  const [patientSearch, setPatientSearch] = useState('');
+  const patientSearchAbort = useRef<AbortController | null>(null);
+
+  const facilities =
+    facilityState.state === 'success' ? facilityState.data : [];
+  const fixedFacility = facilities.length === 1 ? facilities[0] : null;
+  const practitioners =
+    practitionerState.state === 'success' ? practitionerState.data : [];
+  const patients = patientState.state === 'success' ? patientState.data : [];
+  const selectedPatient = patients.find(
+    (patient) => patient.id === selectedPatientId,
+  );
+  const selectedPractitioner = practitioners.find(
+    (practitioner) => practitioner.id === selectedPractitionerId,
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadFacilities() {
+      setFacilityState({ state: 'loading' });
+      try {
+        const response = await apiClient.listFacilities({
+          signal: controller.signal,
+        });
+        setFacilityState(
+          response.data.length > 0
+            ? { state: 'success', data: response.data }
+            : { state: 'empty' },
+        );
+      } catch (error) {
+        const message = getApiErrorMessage(error);
+        if (!message) {
+          return;
+        }
+        if (
+          error instanceof HakimiApiError &&
+          error.kind === 'unauthenticated'
+        ) {
+          onSessionExpired();
+          return;
+        }
+        setFacilityState({ state: 'error', message });
+      }
+    }
+
+    void loadFacilities();
+
+    return () => {
+      controller.abort();
+    };
+  }, [apiClient, onSessionExpired]);
+
+  useEffect(() => {
+    const facility = fixedFacility;
+
+    if (!facility) {
+      return;
+    }
+
+    const facilityId = facility.id;
+    const controller = new AbortController();
+
+    async function loadPractitioners() {
+      setPractitionerState({ state: 'loading' });
+      setSelectedPractitionerId('');
+      try {
+        const response = await apiClient.listPractitioners({
+          facilityId,
+          signal: controller.signal,
+        });
+        setPractitionerState(
+          response.data.length > 0
+            ? { state: 'success', data: response.data }
+            : { state: 'empty' },
+        );
+      } catch (error) {
+        const message = getApiErrorMessage(error);
+        if (!message) {
+          return;
+        }
+        if (
+          error instanceof HakimiApiError &&
+          error.kind === 'unauthenticated'
+        ) {
+          onSessionExpired();
+          return;
+        }
+        setPractitionerState({ state: 'error', message });
+      }
+    }
+
+    void loadPractitioners();
+
+    return () => {
+      controller.abort();
+    };
+  }, [apiClient, fixedFacility, onSessionExpired]);
+
+  async function searchPatients(mode: 'query' | 'browse') {
+    if (!fixedFacility) {
+      return;
+    }
+
+    patientSearchAbort.current?.abort();
+    const controller = new AbortController();
+    patientSearchAbort.current = controller;
+    setSelectedPatientId('');
+    setPatientState({ state: 'loading' });
+
+    try {
+      const request = {
+        facilityId: fixedFacility.id,
+        signal: controller.signal,
+        ...(mode === 'query' && patientSearch.trim().length > 0
+          ? { search: patientSearch.trim() }
+          : {}),
+      };
+      const response = await apiClient.listPatients({
+        ...request,
+      });
+      setPatientState(
+        response.data.length > 0
+          ? { state: 'success', data: response.data }
+          : { state: 'empty' },
+      );
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      if (!message) {
+        return;
+      }
+      if (error instanceof HakimiApiError && error.kind === 'unauthenticated') {
+        onSessionExpired();
+        return;
+      }
+      setPatientState({ state: 'error', message });
+    }
+  }
+
+  function clearPatientSearch() {
+    patientSearchAbort.current?.abort();
+    setPatientSearch('');
+    setSelectedPatientId('');
+    setPatientState(emptyPatientResults);
+  }
+
+  return (
+    <section className="workspace" aria-label="Protected workforce shell">
+      <header className="workspace-header">
+        <div>
+          <p className="eyebrow">Staff appointment scheduling</p>
+          <h2>Create an appointment for a synthetic patient</h2>
+          <p>
+            Signed in as {user.displayName}. Browser claims are display hints
+            only; API authorization remains server-derived.
+          </p>
+        </div>
+        <div className="storage-note">
+          <strong>Token storage</strong>
+          <span>
+            Bearer tokens stay in memory. OIDC PKCE transaction state may use
+            temporary session storage.
+          </span>
+        </div>
+      </header>
+
+      <div className="scheduling-grid">
+        <section className="workflow-panel" aria-labelledby="facility-heading">
+          <h3 id="facility-heading">1. Authorized facility context</h3>
+          {facilityState.state === 'loading' && <p>Loading facilities...</p>}
+          {facilityState.state === 'empty' && (
+            <p>No facilities are visible to this workforce account.</p>
+          )}
+          {facilityState.state === 'error' && (
+            <p role="alert">{facilityState.message}</p>
+          )}
+          {facilityState.state === 'success' && fixedFacility && (
+            <div className="context-card">
+              <strong>{fixedFacility.name}</strong>
+              <span>
+                {fixedFacility.city}, {fixedFacility.region}
+              </span>
+              <span>Facility code: {fixedFacility.code}</span>
+            </div>
+          )}
+          {facilityState.state === 'success' && facilities.length > 1 && (
+            <p role="alert">
+              Multiple facilities are visible. This local demo does not let the
+              browser expand facility scope.
+            </p>
+          )}
+        </section>
+
+        <section className="workflow-panel" aria-labelledby="patient-heading">
+          <h3 id="patient-heading">2. Patient search</h3>
+          <p>
+            Search by fictional patient name or demo MRN. Results come from the
+            protected patient-list API.
+          </p>
+          <form
+            className="search-row"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void searchPatients('query');
+            }}
+          >
+            <label htmlFor="patient-search">Patient search</label>
+            <div>
+              <input
+                id="patient-search"
+                value={patientSearch}
+                onChange={(event) => {
+                  setPatientSearch(event.target.value);
+                }}
+                placeholder="Name or demo MRN"
+                disabled={!fixedFacility}
+              />
+              <button
+                className="primary-action"
+                type="submit"
+                disabled={!fixedFacility || patientSearch.trim().length < 2}
+              >
+                Search
+              </button>
+              <button
+                className="secondary-action"
+                type="button"
+                disabled={!fixedFacility}
+                onClick={() => void searchPatients('browse')}
+              >
+                Browse
+              </button>
+              <button
+                className="secondary-action"
+                type="button"
+                onClick={clearPatientSearch}
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+
+          {patientState.state === 'idle' && (
+            <p className="empty-state">
+              No patient selected. Search or browse to load PostgreSQL-backed
+              synthetic patients.
+            </p>
+          )}
+          {patientState.state === 'loading' && <p>Loading patients...</p>}
+          {patientState.state === 'empty' && (
+            <p className="empty-state">No synthetic patients found.</p>
+          )}
+          {patientState.state === 'error' && (
+            <p role="alert">{patientState.message}</p>
+          )}
+          {patientState.state === 'success' && (
+            <fieldset className="choice-group">
+              <legend className="sr-only">Select one patient</legend>
+              {patients.map((patient) => {
+                const registration = fixedFacility
+                  ? registrationForFacility(patient, fixedFacility.id)
+                  : undefined;
+                return (
+                  <label className="choice-row" key={patient.id}>
+                    <input
+                      type="radio"
+                      name="patient"
+                      checked={selectedPatientId === patient.id}
+                      onChange={() => {
+                        setSelectedPatientId(patient.id);
+                      }}
+                    />
+                    <span>
+                      <strong>{formatPersonName(patient)}</strong>
+                      <small>
+                        Demo MRN{' '}
+                        {registration?.medicalRecordNumber ?? 'not available'}
+                      </small>
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          )}
+        </section>
+
+        <section
+          className="workflow-panel"
+          aria-labelledby="practitioner-heading"
+        >
+          <h3 id="practitioner-heading">3. Practitioner</h3>
+          <p>
+            Practitioners are loaded from the protected practitioner-list API
+            using the authorized facility context.
+          </p>
+          {practitionerState.state === 'idle' && (
+            <p className="empty-state">Load an authorized facility first.</p>
+          )}
+          {practitionerState.state === 'loading' && (
+            <p>Loading practitioners...</p>
+          )}
+          {practitionerState.state === 'empty' && (
+            <p className="empty-state">
+              No active practitioners are visible for this facility.
+            </p>
+          )}
+          {practitionerState.state === 'error' && (
+            <p role="alert">{practitionerState.message}</p>
+          )}
+          {practitionerState.state === 'success' && (
+            <fieldset className="choice-group">
+              <legend className="sr-only">Select one practitioner</legend>
+              {practitioners.map((practitioner) => (
+                <label className="choice-row" key={practitioner.id}>
+                  <input
+                    type="radio"
+                    name="practitioner"
+                    checked={selectedPractitionerId === practitioner.id}
+                    onChange={() => {
+                      setSelectedPractitionerId(practitioner.id);
+                    }}
+                  />
+                  <span>
+                    <strong>{formatPersonName(practitioner)}</strong>
+                    <small>{practitioner.profession}</small>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
+        </section>
+
+        <section
+          className="workflow-panel"
+          aria-labelledby="availability-heading"
+        >
+          <h3 id="availability-heading">4. Date and time</h3>
+          <p role="status">Appointment availability is not implemented yet.</p>
+          <p>
+            Hakimi can read authorized facilities, patients, and practitioners,
+            but the API does not yet expose an availability endpoint. This demo
+            stops here instead of showing fake slots.
+          </p>
+        </section>
+      </div>
+
+      <aside className="summary-panel" aria-label="Appointment summary">
+        <h3>Appointment summary</h3>
+        <dl>
+          <div>
+            <dt>Facility</dt>
+            <dd>{fixedFacility?.name ?? 'Not selected'}</dd>
+          </div>
+          <div>
+            <dt>Patient</dt>
+            <dd>
+              {selectedPatient
+                ? formatPersonName(selectedPatient)
+                : 'Not selected'}
+            </dd>
+          </div>
+          <div>
+            <dt>Practitioner</dt>
+            <dd>
+              {selectedPractitioner
+                ? formatPersonName(selectedPractitioner)
+                : 'Not selected'}
+            </dd>
+          </div>
+          <div>
+            <dt>Date and time</dt>
+            <dd>Unavailable</dd>
+          </div>
+          <div>
+            <dt>Appointment status</dt>
+            <dd>Not started</dd>
+          </div>
+        </dl>
+      </aside>
+    </section>
+  );
+}
+
+export default function App({ authClient, apiClient, initialPath }: AppProps) {
   const initialization = useRef<Promise<WorkforceUserHint | null> | null>(null);
   const [client] = useState<WorkforceAuthClient | null>(() => {
     try {
@@ -38,13 +490,20 @@ export default function App({ authClient, initialPath }: AppProps) {
       return null;
     }
   });
+  const [api] = useState<HakimiApiClient | null>(() => {
+    try {
+      return apiClient ?? (client ? createDefaultApiClient(client) : null);
+    } catch {
+      return null;
+    }
+  });
   const [status, setStatus] = useState<AuthStatus>(
-    client
+    client && api
       ? { state: 'loading' }
       : {
           state: 'error',
           message:
-            'Workforce OIDC configuration is missing or invalid. Check VITE_OIDC_* development settings.',
+            'Workforce OIDC or Hakimi API configuration is missing or invalid. Check VITE_* development settings.',
         },
   );
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -113,16 +572,6 @@ export default function App({ authClient, initialPath }: AppProps) {
     }
   }
 
-  async function handleRefresh() {
-    if (!client) {
-      return;
-    }
-
-    setStatus({ state: 'loading' });
-    const user = await client.refresh();
-    setStatus(user ? { state: 'authenticated', user } : { state: 'signedOut' });
-  }
-
   async function handleLogout() {
     if (!client) {
       return;
@@ -141,6 +590,10 @@ export default function App({ authClient, initialPath }: AppProps) {
     } finally {
       setIsSigningOut(false);
     }
+  }
+
+  function expireSession() {
+    setStatus({ state: 'signedOut' });
   }
 
   return (
@@ -190,8 +643,8 @@ export default function App({ authClient, initialPath }: AppProps) {
           </section>
         )}
 
-        {status.state === 'authenticated' && (
-          <section className="workspace" aria-label="Protected workforce shell">
+        {status.state === 'authenticated' && api && (
+          <>
             <div className="workspace-heading">
               <div>
                 <p className="state-label">Authenticated workforce shell</p>
@@ -206,40 +659,12 @@ export default function App({ authClient, initialPath }: AppProps) {
                 {isSigningOut ? 'Signing out...' : 'Logout'}
               </button>
             </div>
-
-            <dl className="claim-grid">
-              <div>
-                <dt>Fictional username</dt>
-                <dd>{status.user.username ?? 'Not provided'}</dd>
-              </div>
-              <div>
-                <dt>Development assurance hint</dt>
-                <dd>{status.user.acr ?? 'Not provided'}</dd>
-              </div>
-              <div>
-                <dt>Token storage</dt>
-                <dd>In memory only</dd>
-              </div>
-            </dl>
-
-            <div className="boundary-card">
-              <h3>Authorization boundary</h3>
-              <p>
-                Browser claims are display hints only. API access remains
-                verified server-side from the signed bearer token and
-                PostgreSQL-backed workforce actor, role, session, and facility
-                scope.
-              </p>
-            </div>
-
-            <button
-              className="secondary-action"
-              type="button"
-              onClick={() => void handleRefresh()}
-            >
-              Refresh workforce session
-            </button>
-          </section>
+            <ProtectedSchedulingWorkspace
+              apiClient={api}
+              onSessionExpired={expireSession}
+              user={status.user}
+            />
+          </>
         )}
 
         {status.state === 'error' && (

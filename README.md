@@ -217,7 +217,13 @@ not run automatically.
 Phase 3 adds a minimal React workforce shell that redirects to the local
 Keycloak provider using Authorization Code with PKCE. Tokens are kept in memory
 only, so a full browser reload may require renewed OIDC initialization or
-sign-in. Appointment scheduling UI integration remains a later phase. See
+sign-in.
+
+Phase 4 adds read-only staff scheduling data integration after sign-in. The web
+app uses the local Vite proxy at `/api/v1` to load facility, patient, and
+practitioner records from the protected PostgreSQL-backed API. Appointment
+availability and appointment creation remain intentionally outside the web
+integration. See
 [docs/LOCAL_OIDC_DEVELOPMENT.md](docs/LOCAL_OIDC_DEVELOPMENT.md).
 
 ### Controlled Provisioning

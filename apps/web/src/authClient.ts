@@ -18,6 +18,7 @@ export type WorkforceAuthClient = Readonly<{
   initialize(): Promise<WorkforceUserHint | null>;
   signIn(returnPath: string): Promise<void>;
   handleRedirectCallback(): Promise<WorkforceUserHint | null>;
+  getAccessToken(): Promise<string | null>;
   refresh(): Promise<WorkforceUserHint | null>;
   signOut(): Promise<void>;
   clear(): Promise<void>;
@@ -47,6 +48,18 @@ function toUserHint(user: User | null) {
     acr: safeStringClaim(user.profile.acr),
     expiresAt: user.expires_at ?? null,
   });
+}
+
+function hasUsableToken(user: User | null, skewSeconds = 60) {
+  if (!user?.access_token || user.expired) {
+    return false;
+  }
+
+  if (!user.expires_at) {
+    return true;
+  }
+
+  return user.expires_at - Math.floor(Date.now() / 1000) > skewSeconds;
 }
 
 function createUserManagerSettings(
@@ -84,6 +97,21 @@ export function createWorkforceAuthClient(
     new UserManager(settings),
 ): WorkforceAuthClient {
   const manager = userManagerFactory(createUserManagerSettings(config));
+  let refreshInFlight: Promise<User | null> | null = null;
+
+  async function refreshUser() {
+    refreshInFlight ??= manager
+      .signinSilent()
+      .catch(async () => {
+        await manager.removeUser();
+        return null;
+      })
+      .finally(() => {
+        refreshInFlight = null;
+      });
+
+    return refreshInFlight;
+  }
 
   return Object.freeze({
     async initialize() {
@@ -118,13 +146,22 @@ export function createWorkforceAuthClient(
       return toUserHint(user);
     },
 
-    async refresh() {
-      try {
-        return toUserHint(await manager.signinSilent());
-      } catch {
-        await manager.removeUser();
-        return null;
+    async getAccessToken() {
+      const user = await manager.getUser();
+
+      if (hasUsableToken(user)) {
+        return user?.access_token ?? null;
       }
+
+      const refreshedUser = await refreshUser();
+
+      return hasUsableToken(refreshedUser, 0)
+        ? (refreshedUser?.access_token ?? null)
+        : null;
+    },
+
+    async refresh() {
+      return toUserHint(await refreshUser());
     },
 
     async signOut() {
