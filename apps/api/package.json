@@ -12,6 +12,7 @@
     "schema:verify": "tsx src/schema-verify.ts",
     "docs:validate": "npx redocly lint openapi.yaml",
     "access:provision": "tsx src/access/provision.ts",
+    "access:provision:local-demo": "tsx src/access/local-demo-provision.ts",
     "test:integration:db": "vitest run --config vitest.integration.config.ts",
     "worker:reminders": "tsx src/reminders/worker.ts"
   },

@@ -184,6 +184,48 @@ The approved workforce roles are `PLATFORM_ADMIN`, `FACILITY_ADMIN`, `SCHEDULER`
 
 All Sprint 15 use is limited to fictional, synthetic records. The implementation does not authorize production deployment or processing of real patient data.
 
+### Local OIDC Development Provider
+
+Phase 1 of the authenticated local development path adds a deterministic
+development-only Keycloak realm for workforce OIDC testing:
+
+```bash
+docker compose --profile local-oidc up -d oidc
+```
+
+The imported realm is `hakimi-local`, the public browser client is
+`hakimi-web`, and the fictional development user is `Demo Scheduler`
+(`demo.scheduler`). The provider emits tokens compatible with the API verifier's
+existing issuer, audience, `sid`, `auth_time`, and development `acr`
+requirements when the API is run on the host with the documented loopback OIDC
+environment overrides.
+
+This provider is not production identity infrastructure. The local
+`workforce-mfa` `acr` value is compatibility evidence only and is not a
+production MFA assertion. Phase 2 adds an explicit opt-in command for
+PostgreSQL-backed fictional demo records:
+
+```bash
+HAKIMI_ENABLE_LOCAL_DEMO_PROVISIONING=true npm run access:provision:local-demo
+```
+
+The command refuses `NODE_ENV=production`, maps the real local Keycloak `sub` to
+a PostgreSQL workforce actor, and provisions fictional facility, practitioner,
+patient, registration, and appointment records for local API testing. It does
+not run automatically.
+
+Phase 3 adds a minimal React workforce shell that redirects to the local
+Keycloak provider using Authorization Code with PKCE. Tokens are kept in memory
+only, so a full browser reload may require renewed OIDC initialization or
+sign-in.
+
+Phase 4 adds read-only staff scheduling data integration after sign-in. The web
+app uses the local Vite proxy at `/api/v1` to load facility, patient, and
+practitioner records from the protected PostgreSQL-backed API. Appointment
+availability and appointment creation remain intentionally outside the web
+integration. See
+[docs/LOCAL_OIDC_DEVELOPMENT.md](docs/LOCAL_OIDC_DEVELOPMENT.md).
+
 ### Controlled Provisioning
 
 Workforce authority is managed only through the local non-HTTP command:
