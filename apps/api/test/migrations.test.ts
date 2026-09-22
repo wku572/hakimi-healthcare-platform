@@ -11,6 +11,10 @@ describe('migration catalog', () => {
     const catalog = buildMigrationCatalogFromFiles(
       [
         {
+          filename: '007_create_appointment_availability.sql',
+          sql: '-- up 7',
+        },
+        {
           filename: '006_create_workforce_access_control.sql',
           sql: '-- up 6',
         },
@@ -30,6 +34,10 @@ describe('migration catalog', () => {
         { filename: '001_create_healthcare_facilities.sql', sql: '-- up 1' },
       ],
       [
+        {
+          filename: '007_create_appointment_availability.sql',
+          sql: '-- down 7',
+        },
         {
           filename: '006_create_workforce_access_control.sql',
           sql: '-- down 6',
@@ -61,6 +69,7 @@ describe('migration catalog', () => {
       '004',
       '005',
       '006',
+      '007',
     ]);
   });
 
@@ -152,6 +161,43 @@ describe('migration catalog', () => {
     );
     expect(down.indexOf('workforce_role_assignments')).toBeLessThan(
       down.indexOf('workforce_actors'),
+    );
+  });
+
+  it('defines appointment availability migration objects with safe identifiers', () => {
+    const migrationDirectory = fileURLToPath(
+      new URL('../database/migrations/', import.meta.url),
+    );
+    const up = readFileSync(
+      `${migrationDirectory}/up/007_create_appointment_availability.sql`,
+      'utf8',
+    );
+    const down = readFileSync(
+      `${migrationDirectory}/down/007_create_appointment_availability.sql`,
+      'utf8',
+    );
+
+    expect(up).toContain('ADD COLUMN time_zone');
+    expect(up).toContain('CREATE TABLE practitioner_working_hours');
+    expect(up).toContain('ON DELETE RESTRICT');
+    expect(up).toContain('is_valid_iana_time_zone');
+    expect(up).toContain('LANGUAGE sql');
+    expect(up).toContain('SET search_path = pg_catalog, pg_temp');
+    expect(up).toContain('pg_catalog.pg_timezone_names');
+    expect(up).toContain("name LIKE '%/%'");
+    expect(up).not.toContain('AT TIME ZONE zone_name');
+    const identifiers = [
+      ...up.matchAll(/\bCONSTRAINT\s+([a-z0-9_]+)/g),
+      ...up.matchAll(/\bCREATE (?:UNIQUE )?INDEX\s+([a-z0-9_]+)/g),
+    ].map((match) => match[1]!);
+    expect(identifiers.length).toBeGreaterThan(0);
+    expect(
+      identifiers.every(
+        (identifier) => Buffer.byteLength(identifier, 'utf8') <= 63,
+      ),
+    ).toBe(true);
+    expect(down.indexOf('practitioner_working_hours')).toBeLessThan(
+      down.indexOf('time_zone'),
     );
   });
 });

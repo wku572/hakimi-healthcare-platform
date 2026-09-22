@@ -39,6 +39,9 @@ export type {
 } from './practitioner-api.js';
 export type {
   Appointment,
+  AppointmentAvailabilityQuery,
+  AppointmentAvailabilityResponse,
+  AppointmentAvailabilitySlot,
   AppointmentFacilitySummary,
   AppointmentListQuery,
   AppointmentListResponse,

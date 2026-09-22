@@ -13,6 +13,7 @@ export type CreateHealthcareFacilityInput = {
   region: string;
   city: string;
   addressLine?: string | null | undefined;
+  timeZone?: string | undefined;
   isActive?: boolean | undefined;
 };
 
@@ -26,6 +27,7 @@ export type UpdateHealthcareFacilityInput = {
   region?: string | undefined;
   city?: string | undefined;
   addressLine?: string | null | undefined;
+  timeZone?: string | undefined;
   isActive?: boolean | undefined;
 };
 
