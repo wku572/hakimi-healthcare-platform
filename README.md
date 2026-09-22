@@ -172,7 +172,7 @@ Production limits:
 
 ## Workforce Access Control
 
-The 24 `/api/v1` operations require a short-lived OIDC bearer access token. The API validates an asymmetric signature, exact issuer and audience, bounded token age, approved workforce MFA `acr`, and required OIDC session claims. The two health operations remain public.
+The 25 `/api/v1` operations require a short-lived OIDC bearer access token. The API validates an asymmetric signature, exact issuer and audience, bounded token age, approved workforce MFA `acr`, and required OIDC session claims. The two health operations remain public.
 
 Authorization is default deny. Tokens identify an issuer, subject, and identity-provider session only; they never supply roles, facility scopes, practitioner links, activation state, or revocation state. The API derives that immutable context from the Sprint 15 PostgreSQL authority tables on every request:
 
@@ -211,8 +211,8 @@ HAKIMI_ENABLE_LOCAL_DEMO_PROVISIONING=true npm run access:provision:local-demo
 
 The command refuses `NODE_ENV=production`, maps the real local Keycloak `sub` to
 a PostgreSQL workforce actor, and provisions fictional facility, practitioner,
-patient, registration, and appointment records for local API testing. It does
-not run automatically.
+patient, registration, appointment, facility time-zone, and practitioner
+working-hours records for local API testing. It does not run automatically.
 
 Phase 3 adds a minimal React workforce shell that redirects to the local
 Keycloak provider using Authorization Code with PKCE. Tokens are kept in memory
@@ -222,8 +222,9 @@ sign-in.
 Phase 4 adds read-only staff scheduling data integration after sign-in. The web
 app uses the local Vite proxy at `/api/v1` to load facility, patient, and
 practitioner records from the protected PostgreSQL-backed API. Appointment
-availability and appointment creation remain intentionally outside the web
-integration. See
+appointment creation remains intentionally outside the web integration. The API
+now exposes protected advisory appointment availability for authenticated local
+API testing. See
 [docs/LOCAL_OIDC_DEVELOPMENT.md](docs/LOCAL_OIDC_DEVELOPMENT.md).
 
 ### Controlled Provisioning
@@ -509,6 +510,7 @@ Route summary:
 
 - `POST /api/v1/appointments` - create an appointment
 - `GET /api/v1/appointments` - list appointments with pagination and filters
+- `GET /api/v1/appointments/availability` - list advisory practitioner slots from server-controlled working hours
 - `GET /api/v1/appointments/:appointmentId` - fetch one appointment by UUID
 - `PATCH /api/v1/appointments/:appointmentId` - update appointment time or status
 - `POST /api/v1/appointments/:appointmentId/cancel` - cancel an appointment without deleting it
@@ -523,6 +525,10 @@ Appointment rules:
 - Cancellation requires a nonblank reason and preserves the appointment record for history.
 - Status values are `SCHEDULED`, `CONFIRMED`, `COMPLETED`, `CANCELLED`, and `NO_SHOW`.
 - Appointment confirmations, reschedules, cancellations, completions, and no-shows maintain reminder rows in the same transaction as the appointment change.
+- Appointment availability is advisory. It is generated on the server from the facility time zone, active practitioner working hours, and existing scheduled or confirmed appointments.
+- Clients cannot provide or override slot duration. The returned `slotMinutes` value comes from server-controlled working-hours rows.
+- Availability does not model blocked time or leave yet and does not return patient details, appointment details, unavailable intervals, or busy reasons.
+- Booking is finalized only by a successful `POST /api/v1/appointments`; the PostgreSQL overlap exclusion constraint remains the final concurrency authority.
 
 Reminder worker:
 
@@ -686,6 +692,8 @@ Warning: `docker compose down --volumes` deletes the local PostgreSQL data volum
 - the `facility_type` check constraint matches the allowed values
 - the `practitioners` table exists with stable unique constraints, checks, and defaults
 - the `practitioner_facility_assignments` table exists with foreign keys, the duplicate-assignment unique constraint, and the partial unique index that enforces one active primary assignment per practitioner
+- the `healthcare_facilities` table includes a non-null validated IANA `time_zone`
+- the `practitioner_working_hours` table exists with slot-duration, effective-date, weekday, restrictive foreign-key, and active-definition constraints
 - the `appointments` table includes `schedule_version` and the reminder-related check constraint
 - the `appointment_reminders` table exists with bounded string columns, state checks, unique keys, and processing indexes
 - the workforce actor, role-assignment, and session tables include their bounded columns, lifecycle checks, restrictive foreign keys, unique authority indexes, and active-session indexes

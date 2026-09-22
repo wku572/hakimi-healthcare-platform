@@ -1,5 +1,7 @@
 import type {
   Appointment,
+  AppointmentAvailabilityQuery,
+  AppointmentAvailabilitySlot,
   AppointmentListQuery,
   AppointmentListResponse,
   AppointmentFacilitySummary,
@@ -63,6 +65,10 @@ type AppointmentStatusRow = {
   is_active: boolean;
 };
 
+type FacilityAvailabilityStatusRow = AppointmentStatusRow & {
+  time_zone: string;
+};
+
 type AppointmentScheduleStateRow = {
   id: string;
   practitioner_id: string;
@@ -83,6 +89,12 @@ type PatientRegistrationStatusRow = {
 type AppointmentSearchResult = {
   rows: Appointment[];
   pagination: AppointmentListResponse['pagination'];
+};
+
+type AvailabilitySlotRow = {
+  start: Date | string;
+  end: Date | string;
+  slot_minutes: number;
 };
 
 const appointmentStatuses = [
@@ -207,6 +219,16 @@ function mapAppointmentRow(row: AppointmentRow): Appointment {
     patient: mapPatientSummary(row),
     practitioner: mapPractitionerSummary(row),
     facility: mapFacilitySummary(row),
+  };
+}
+
+function mapAvailabilitySlotRow(
+  row: AvailabilitySlotRow,
+): AppointmentAvailabilitySlot {
+  return {
+    start: toIsoString(row.start)!,
+    end: toIsoString(row.end)!,
+    slotMinutes: row.slot_minutes,
   };
 }
 
@@ -404,6 +426,10 @@ export type AppointmentRepository = {
     id: string,
     db?: DbExecutor,
   ): Promise<AppointmentStatusRow | null>;
+  getFacilityAvailabilityStatus(
+    id: string,
+    db?: DbExecutor,
+  ): Promise<FacilityAvailabilityStatusRow | null>;
   getPractitionerStatus(
     id: string,
     db?: DbExecutor,
@@ -429,6 +455,10 @@ export type AppointmentRepository = {
     excludeAppointmentId?: string,
     db?: DbExecutor,
   ): Promise<Appointment | null>;
+  listAvailableSlots(
+    input: AppointmentAvailabilityQuery,
+    db?: DbExecutor,
+  ): Promise<AppointmentAvailabilitySlot[]>;
 };
 
 export function createAppointmentRepository(
@@ -658,6 +688,19 @@ export function createAppointmentRepository(
       return result.rows[0] ?? null;
     },
 
+    async getFacilityAvailabilityStatus(id, executor = db) {
+      const result = await executor.query<FacilityAvailabilityStatusRow>(
+        `
+          SELECT id, is_active, time_zone
+          FROM healthcare_facilities
+          WHERE id = $1
+        `,
+        [id],
+      );
+
+      return result.rows[0] ?? null;
+    },
+
     async getPractitionerStatus(id, executor = db) {
       const result = await executor.query<AppointmentStatusRow>(
         `
@@ -755,6 +798,76 @@ export function createAppointmentRepository(
       );
 
       return result.rows[0] ? mapAppointmentRow(result.rows[0]) : null;
+    },
+
+    async listAvailableSlots(input, executor = db) {
+      const result = await executor.query<AvailabilitySlotRow>(
+        `
+          WITH candidate_slots AS (
+            SELECT DISTINCT
+              candidate.slot_start AS start,
+              candidate.slot_start + make_interval(mins => working_hours.slot_minutes) AS "end",
+              working_hours.slot_minutes
+            FROM practitioner_working_hours working_hours
+            JOIN healthcare_facilities facility
+              ON facility.id = working_hours.facility_id
+            CROSS JOIN LATERAL generate_series(
+              date_trunc('day', $3::timestamptz) - interval '1 day',
+              $4::timestamptz,
+              interval '5 minutes'
+            ) AS candidate(slot_start)
+            CROSS JOIN LATERAL (
+              SELECT
+                candidate.slot_start AT TIME ZONE facility.time_zone AS local_start,
+                (
+                  candidate.slot_start
+                  + make_interval(mins => working_hours.slot_minutes)
+                ) AT TIME ZONE facility.time_zone AS local_end
+            ) local_window
+            WHERE working_hours.facility_id = $1
+              AND working_hours.practitioner_id = $2
+              AND working_hours.is_active = true
+              AND candidate.slot_start >= $3::timestamptz
+              AND candidate.slot_start >= now()
+              AND candidate.slot_start + make_interval(mins => working_hours.slot_minutes) <= $4::timestamptz
+              AND EXTRACT(ISODOW FROM local_window.local_start)::int = working_hours.iso_weekday
+              AND local_window.local_start::date = local_window.local_end::date
+              AND local_window.local_start::date >= working_hours.effective_start_date
+              AND (
+                working_hours.effective_end_date IS NULL
+                OR local_window.local_start::date <= working_hours.effective_end_date
+              )
+              AND local_window.local_start::time >= working_hours.local_start_time
+              AND local_window.local_end::time <= working_hours.local_end_time
+              AND (
+                EXTRACT(EPOCH FROM (
+                  local_window.local_start::time - working_hours.local_start_time
+                ))::int / 60
+              ) % working_hours.slot_minutes = 0
+              AND NOT EXISTS (
+                SELECT 1
+                FROM appointments appointment
+                WHERE appointment.practitioner_id = working_hours.practitioner_id
+                  AND appointment.status IN ('SCHEDULED', 'CONFIRMED')
+                  AND tstzrange(
+                    appointment.scheduled_start,
+                    appointment.scheduled_end,
+                    '[)'
+                  ) && tstzrange(
+                    candidate.slot_start,
+                    candidate.slot_start + make_interval(mins => working_hours.slot_minutes),
+                    '[)'
+                  )
+              )
+          )
+          SELECT start, "end", slot_minutes
+          FROM candidate_slots
+          ORDER BY start ASC, "end" ASC, slot_minutes ASC
+        `,
+        [input.facilityId, input.practitionerId, input.from, input.to],
+      );
+
+      return result.rows.map(mapAvailabilitySlotRow);
     },
   };
 }

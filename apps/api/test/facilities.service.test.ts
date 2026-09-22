@@ -25,6 +25,7 @@ describe('healthcare facility service', () => {
       region: 'Addis Ababa',
       city: 'Addis Ababa',
       addressLine: null,
+      timeZone: 'Africa/Addis_Ababa',
       isActive: true,
       createdAt: '2026-08-05T00:00:00.000Z',
       updatedAt: '2026-08-05T00:00:00.000Z',
@@ -42,6 +43,7 @@ describe('healthcare facility service', () => {
       region: '  Addis Ababa  ',
       city: '  Addis Ababa  ',
       addressLine: '  ',
+      timeZone: undefined,
       isActive: undefined,
     });
 
@@ -55,6 +57,7 @@ describe('healthcare facility service', () => {
       region: 'Addis Ababa',
       city: 'Addis Ababa',
       addressLine: null,
+      timeZone: 'Africa/Addis_Ababa',
       isActive: true,
     });
   });
@@ -72,6 +75,7 @@ describe('healthcare facility service', () => {
       region: 'Addis Ababa',
       city: 'Addis Ababa',
       addressLine: null,
+      timeZone: 'Africa/Addis_Ababa',
       isActive: false,
       createdAt: '2026-08-05T00:00:00.000Z',
       updatedAt: '2026-08-05T00:01:00.000Z',
@@ -89,6 +93,7 @@ describe('healthcare facility service', () => {
       region: '  Addis Ababa  ',
       city: '  Addis Ababa  ',
       addressLine: '  ',
+      timeZone: '  Africa/Addis_Ababa  ',
       isActive: false,
     });
 
@@ -104,6 +109,7 @@ describe('healthcare facility service', () => {
         region: 'Addis Ababa',
         city: 'Addis Ababa',
         addressLine: null,
+        timeZone: 'Africa/Addis_Ababa',
         isActive: false,
       },
     );

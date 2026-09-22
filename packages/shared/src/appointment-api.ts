@@ -98,3 +98,25 @@ export type AppointmentListResponse = {
   data: Appointment[];
   pagination: AppointmentPagination;
 };
+
+export type AppointmentAvailabilityQuery = {
+  facilityId: string;
+  practitionerId: string;
+  from: string;
+  to: string;
+};
+
+export type AppointmentAvailabilitySlot = {
+  start: string;
+  end: string;
+  slotMinutes: number;
+};
+
+export type AppointmentAvailabilityResponse = {
+  facilityId: string;
+  practitionerId: string;
+  timeZone: string;
+  from: string;
+  to: string;
+  slots: AppointmentAvailabilitySlot[];
+};

@@ -33,6 +33,7 @@ type FacilityRow = {
   region: string;
   city: string;
   address_line: string | null;
+  time_zone: string;
   is_active: boolean;
   created_at: Date | string;
   updated_at: Date | string;
@@ -49,6 +50,7 @@ const FACILITY_SELECT_COLUMNS = `
   region,
   city,
   address_line,
+  time_zone,
   is_active,
   created_at,
   updated_at
@@ -64,6 +66,7 @@ const FACILITY_MUTABLE_COLUMN_MAP = {
   region: 'region',
   city: 'city',
   addressLine: 'address_line',
+  timeZone: 'time_zone',
   isActive: 'is_active',
 } as const;
 
@@ -95,6 +98,7 @@ function mapFacilityRow(row: FacilityRow): HealthcareFacility {
     region: row.region,
     city: row.city,
     addressLine: row.address_line,
+    timeZone: row.time_zone,
     isActive: row.is_active,
     createdAt: toIsoString(row.created_at),
     updatedAt: toIsoString(row.updated_at),
@@ -236,9 +240,10 @@ export function createHealthcareFacilityRepository(
               region,
               city,
               address_line,
+              time_zone,
               is_active
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING ${FACILITY_SELECT_COLUMNS}
           `,
           [
@@ -251,6 +256,7 @@ export function createHealthcareFacilityRepository(
             input.region,
             input.city,
             input.addressLine ?? null,
+            input.timeZone,
             input.isActive ?? true,
           ],
         );
@@ -374,6 +380,7 @@ export function createHealthcareFacilityRepository(
                 facility.region,
                 facility.city,
                 facility.address_line,
+                facility.time_zone,
                 facility.is_active,
                 facility.created_at,
                 facility.updated_at,

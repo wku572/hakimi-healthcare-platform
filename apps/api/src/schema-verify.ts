@@ -61,6 +61,14 @@ type IndexMetadata = {
   indexdef: string;
 };
 
+type FunctionMetadata = {
+  proname: string;
+  volatility: string;
+  language: string;
+  config: string[] | null;
+  definition: string;
+};
+
 function normalizeSql(sql: string) {
   return sql.replace(/\s+/g, ' ').trim().toLowerCase();
 }
@@ -324,6 +332,70 @@ async function assertIndexes(
   }
 }
 
+async function assertFunctionDefinition(
+  client: {
+    query<T extends Record<string, unknown>>(
+      text: string,
+      values?: unknown[],
+    ): Promise<{
+      rows: T[];
+    }>;
+  },
+  functionName: string,
+  expected: {
+    volatility: string;
+    language: string;
+    configFragments: string[];
+    definitionFragments: string[];
+  },
+) {
+  const result = await client.query<FunctionMetadata>(
+    `
+      SELECT
+        p.proname,
+        p.provolatile AS volatility,
+        language.lanname AS language,
+        p.proconfig AS config,
+        pg_get_functiondef(p.oid) AS definition
+      FROM pg_proc p
+      JOIN pg_namespace n
+        ON n.oid = p.pronamespace
+      JOIN pg_language language
+        ON language.oid = p.prolang
+      WHERE n.nspname = 'public'
+        AND p.proname = $1
+    `,
+    [functionName],
+  );
+
+  const actual = result.rows[0];
+
+  if (!actual) {
+    throw new Error(`Missing function ${functionName}.`);
+  }
+
+  if (
+    actual.volatility !== expected.volatility ||
+    actual.language !== expected.language
+  ) {
+    throw new Error(`Function ${functionName} does not match expectations.`);
+  }
+
+  const config = (actual.config ?? []).join(' ');
+
+  for (const fragment of expected.configFragments) {
+    if (!includesNormalizedFragment(config, fragment)) {
+      throw new Error(`Function ${functionName} has unexpected configuration.`);
+    }
+  }
+
+  for (const fragment of expected.definitionFragments) {
+    if (!includesNormalizedFragment(actual.definition, fragment)) {
+      throw new Error(`Function ${functionName} definition is not expected.`);
+    }
+  }
+}
+
 async function verifyHealthcareFacilitySchema(client: {
   query<T extends Record<string, unknown>>(
     text: string,
@@ -333,6 +405,17 @@ async function verifyHealthcareFacilitySchema(client: {
   }>;
 }) {
   await assertTableExists(client, 'healthcare_facilities');
+  await assertFunctionDefinition(client, 'is_valid_iana_time_zone', {
+    volatility: 's',
+    language: 'sql',
+    configFragments: ['search_path=pg_catalog, pg_temp'],
+    definitionFragments: [
+      'pg_catalog.pg_timezone_names',
+      'name = zone_name',
+      'name = btrim(zone_name)',
+      "name LIKE '%/%'",
+    ],
+  });
   await assertColumns(client, 'healthcare_facilities', [
     {
       column_name: 'id',
@@ -425,6 +508,13 @@ async function verifyHealthcareFacilitySchema(client: {
       is_nullable: 'NO',
       default_expr: 'now()',
     },
+    {
+      column_name: 'time_zone',
+      data_type: 'character varying(100)',
+      character_maximum_length: 100,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
   ]);
   await assertConstraints(client, 'healthcare_facilities', {
     healthcare_facilities_pkey: {
@@ -467,6 +557,15 @@ async function verifyHealthcareFacilitySchema(client: {
         `facility_type=any(array[${allowedFacilityTypes
           .map((facilityType) => `'${facilityType}'::text`)
           .join(',')}])`,
+      ],
+    },
+    healthcare_facilities_time_zone_check: {
+      type: 'c',
+      columns: ['time_zone'],
+      definitionFragments: [
+        'time_zone::text = btrim(time_zone::text)',
+        "btrim(time_zone::text) <> ''::text",
+        'is_valid_iana_time_zone(time_zone::text)',
       ],
     },
   });
@@ -764,6 +863,170 @@ async function verifyAssignmentSchema(client: {
       definitionFragments: [
         'create index practitioner_facility_assignments_active_facility_id_idx',
         'where (is_active = true)',
+      ],
+    },
+  });
+}
+
+async function verifyPractitionerWorkingHoursSchema(client: {
+  query<T extends Record<string, unknown>>(
+    text: string,
+    values?: unknown[],
+  ): Promise<{
+    rows: T[];
+  }>;
+}) {
+  await assertTableExists(client, 'practitioner_working_hours');
+  await assertColumns(client, 'practitioner_working_hours', [
+    {
+      column_name: 'id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'uuidv7()',
+    },
+    {
+      column_name: 'practitioner_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'facility_id',
+      data_type: 'uuid',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'iso_weekday',
+      data_type: 'integer',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'local_start_time',
+      data_type: 'time without time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'local_end_time',
+      data_type: 'time without time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'slot_minutes',
+      data_type: 'integer',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'effective_start_date',
+      data_type: 'date',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: null,
+    },
+    {
+      column_name: 'effective_end_date',
+      data_type: 'date',
+      character_maximum_length: null,
+      is_nullable: 'YES',
+      default_expr: null,
+    },
+    {
+      column_name: 'is_active',
+      data_type: 'boolean',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'true',
+    },
+    {
+      column_name: 'created_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+    {
+      column_name: 'updated_at',
+      data_type: 'timestamp with time zone',
+      character_maximum_length: null,
+      is_nullable: 'NO',
+      default_expr: 'now()',
+    },
+  ]);
+  await assertConstraints(client, 'practitioner_working_hours', {
+    practitioner_working_hours_pkey: {
+      type: 'p',
+      columns: ['id'],
+    },
+    practitioner_working_hours_practitioner_id_fkey: {
+      type: 'f',
+      columns: ['practitioner_id'],
+      definitionFragments: [
+        'references practitioners(id)',
+        'on delete restrict',
+      ],
+    },
+    practitioner_working_hours_facility_id_fkey: {
+      type: 'f',
+      columns: ['facility_id'],
+      definitionFragments: [
+        'references healthcare_facilities(id)',
+        'on delete restrict',
+      ],
+    },
+    practitioner_working_hours_weekday_check: {
+      type: 'c',
+      columns: ['iso_weekday'],
+      definitionFragments: ['iso_weekday >= 1', 'iso_weekday <= 7'],
+    },
+    practitioner_working_hours_window_check: {
+      type: 'c',
+      columns: ['local_start_time', 'local_end_time'],
+      definitionFragments: ['local_start_time < local_end_time'],
+    },
+    practitioner_working_hours_slot_minutes_check: {
+      type: 'c',
+      columns: ['slot_minutes'],
+      definitionFragments: ['slot_minutes = any (array[15, 20, 30, 45, 60])'],
+    },
+    practitioner_working_hours_effective_dates_check: {
+      type: 'c',
+      columns: ['effective_end_date', 'effective_start_date'],
+      definitionFragments: [
+        'effective_end_date is null',
+        'effective_end_date >= effective_start_date',
+      ],
+    },
+  });
+  await assertIndexes(client, 'practitioner_working_hours', {
+    practitioner_working_hours_active_definition_key: {
+      definitionFragments: [
+        'create unique index practitioner_working_hours_active_definition_key',
+        '(practitioner_id, facility_id, iso_weekday, local_start_time, local_end_time, slot_minutes, effective_start_date',
+        'where (is_active = true)',
+      ],
+    },
+    practitioner_working_hours_lookup_idx: {
+      definitionFragments: [
+        'create index practitioner_working_hours_lookup_idx',
+        '(facility_id, practitioner_id, iso_weekday, effective_start_date, effective_end_date)',
+        'where (is_active = true)',
+      ],
+    },
+    practitioner_working_hours_practitioner_facility_idx: {
+      definitionFragments: [
+        'create index practitioner_working_hours_practitioner_facility_idx',
+        '(practitioner_id, facility_id)',
       ],
     },
   });
@@ -1928,13 +2191,14 @@ async function verifySchema() {
       await verifyPatientSchema(client);
       await verifyPatientRegistrationSchema(client);
       await verifyAssignmentSchema(client);
+      await verifyPractitionerWorkingHoursSchema(client);
       await verifyAppointmentSchema(client);
       await verifyAppointmentReminderSchema(client);
       await verifyWorkforceActorSchema(client);
       await verifyWorkforceRoleAssignmentSchema(client);
       await verifyWorkforceSessionSchema(client);
       console.log(
-        'Schema verification passed for healthcare_facilities, practitioners, patients, patient_facility_registrations, practitioner_facility_assignments, appointments, appointment_reminders, workforce_actors, workforce_role_assignments, and workforce_sessions.',
+        'Schema verification passed for healthcare_facilities, practitioners, patients, patient_facility_registrations, practitioner_facility_assignments, practitioner_working_hours, appointments, appointment_reminders, workforce_actors, workforce_role_assignments, and workforce_sessions.',
       );
     } finally {
       client.release();

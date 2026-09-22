@@ -50,6 +50,7 @@ const facility = {
   region: 'Addis Ababa',
   city: 'Addis Ababa',
   addressLine: null,
+  timeZone: 'Africa/Addis_Ababa',
   isActive: true,
   createdAt: '2026-08-05T00:00:00.000Z',
   updatedAt: '2026-08-05T00:00:00.000Z',
@@ -102,6 +103,7 @@ describe('facility routes', () => {
       region: 'Addis Ababa',
       city: 'Addis Ababa',
       addressLine: null,
+      timeZone: 'Africa/Addis_Ababa',
       isActive: true,
     });
   });
@@ -125,6 +127,23 @@ describe('facility routes', () => {
         ]),
       },
     });
+    expect(service.createFacility).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid facility time zones at the application boundary', async () => {
+    const { app, service } = createTestApp();
+
+    const response = await request(app).post('/api/v1/facilities').send({
+      code: 'ALPHA-001',
+      name: 'Alpha Clinic',
+      facilityType: 'clinic',
+      region: 'Addis Ababa',
+      city: 'Addis Ababa',
+      timeZone: 'Not/A_Real_Zone',
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
     expect(service.createFacility).not.toHaveBeenCalled();
   });
 

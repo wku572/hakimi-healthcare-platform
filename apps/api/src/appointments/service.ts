@@ -1,5 +1,7 @@
 import type {
   Appointment,
+  AppointmentAvailabilityQuery,
+  AppointmentAvailabilityResponse,
   AppointmentListQuery,
   AppointmentListResponse,
   CancelAppointmentInput,
@@ -31,6 +33,9 @@ export type AppointmentService = {
     query: AppointmentListQuery,
     scope?: DomainAuthorizationScope,
   ): Promise<AppointmentListResponse>;
+  listAppointmentAvailability(
+    query: AppointmentAvailabilityQuery,
+  ): Promise<AppointmentAvailabilityResponse>;
   getAppointmentById(id: string): Promise<Appointment>;
   updateAppointment(
     id: string,
@@ -137,9 +142,9 @@ function ensureScheduledStartIsNotInThePast(start: string) {
   }
 }
 
-function ensureFacilityStatus(
-  facility: { id: string; is_active: boolean } | null,
-): asserts facility is { id: string; is_active: boolean } {
+function ensureFacilityStatus<T extends { id: string; is_active: boolean }>(
+  facility: T | null,
+): asserts facility is T {
   if (!facility) {
     throw createFacilityNotFoundError();
   }
@@ -286,6 +291,47 @@ export function createAppointmentService(
       return {
         data: result.rows,
         pagination: result.pagination,
+      };
+    },
+
+    async listAppointmentAvailability(query) {
+      const normalized: AppointmentAvailabilityQuery = {
+        facilityId: query.facilityId,
+        practitionerId: query.practitionerId,
+        from: normalizeDateTime(normalizeText(query.from)),
+        to: normalizeDateTime(normalizeText(query.to)),
+      };
+
+      const facility = await repository.getFacilityAvailabilityStatus(
+        normalized.facilityId,
+      );
+      ensureFacilityStatus(facility);
+
+      const practitioner = await repository.getPractitionerStatus(
+        normalized.practitionerId,
+      );
+      ensurePractitionerStatus(practitioner);
+
+      const assignment = await repository.getActivePractitionerAssignment(
+        normalized.practitionerId,
+        normalized.facilityId,
+      );
+
+      if (!assignment) {
+        throw createAssignmentNotFoundError(
+          'Practitioner is not assigned to this facility',
+        );
+      }
+
+      const slots = await repository.listAvailableSlots(normalized);
+
+      return {
+        facilityId: normalized.facilityId,
+        practitionerId: normalized.practitionerId,
+        timeZone: facility.time_zone,
+        from: normalized.from,
+        to: normalized.to,
+        slots,
       };
     },
 
