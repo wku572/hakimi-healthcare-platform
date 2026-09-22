@@ -112,6 +112,7 @@ paths:
                   region: Addis Ababa
                   city: Addis Ababa
                   addressLine: Bole Road
+                  timeZone: Africa/Addis_Ababa
                   isActive: true
       responses:
         '401':
@@ -967,6 +968,63 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/v1/appointments/availability:
+    get:
+      tags: [Appointments]
+      summary: List advisory appointment availability
+      description: |
+        Returns server-generated advisory appointment slots from facility working hours.
+        Slot duration is controlled by working-hours configuration; clients cannot
+        provide or override it. Successful appointment creation remains the final
+        booking authority.
+      operationId: listAppointmentAvailability
+      parameters:
+        - name: facilityId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: practitionerId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          required: true
+          description: Inclusive lower bound as an ISO 8601 date-time with explicit offset.
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          description: Exclusive upper bound as an ISO 8601 date-time with explicit offset. The maximum range is 14 days.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '401':
+          $ref: '#/components/responses/AuthenticationRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+        '200':
+          description: Advisory availability slots
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentAvailabilityResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/AppointmentCreateLookupError'
+        '409':
+          $ref: '#/components/responses/AppointmentCreateConflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/v1/appointments/{appointmentId}:
     parameters:
       - name: appointmentId
@@ -1123,6 +1181,7 @@ components:
         - region
         - city
         - addressLine
+        - timeZone
         - isActive
         - createdAt
         - updatedAt
@@ -1156,6 +1215,10 @@ components:
           type:
             - string
             - 'null'
+        timeZone:
+          type: string
+          maxLength: 100
+          example: Africa/Addis_Ababa
         isActive:
           type: boolean
         createdAt:
@@ -1213,6 +1276,10 @@ components:
             - string
             - 'null'
           maxLength: 300
+        timeZone:
+          type: string
+          maxLength: 100
+          default: Africa/Addis_Ababa
         isActive:
           type: boolean
           default: true
@@ -1260,6 +1327,9 @@ components:
             - string
             - 'null'
           maxLength: 300
+        timeZone:
+          type: string
+          maxLength: 100
         isActive:
           type: boolean
     HealthcareFacilityPagination:
@@ -2144,6 +2214,54 @@ components:
             $ref: '#/components/schemas/Appointment'
         pagination:
           $ref: '#/components/schemas/AppointmentPagination'
+    AppointmentAvailabilitySlot:
+      type: object
+      additionalProperties: false
+      required:
+        - start
+        - end
+        - slotMinutes
+      properties:
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        slotMinutes:
+          type: integer
+          enum: [15, 20, 30, 45, 60]
+          description: Server-derived slot duration from working-hours configuration.
+    AppointmentAvailabilityResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - facilityId
+        - practitionerId
+        - timeZone
+        - from
+        - to
+        - slots
+      properties:
+        facilityId:
+          type: string
+          format: uuid
+        practitionerId:
+          type: string
+          format: uuid
+        timeZone:
+          type: string
+          example: Africa/Addis_Ababa
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppointmentAvailabilitySlot'
     ApiErrorDetail:
       type: object
       additionalProperties: false

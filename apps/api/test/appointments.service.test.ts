@@ -8,9 +8,11 @@ function createRepositoryMock() {
     findAppointmentById: vi.fn(),
     findAppointmentScheduleStateById: vi.fn(),
     listAppointments: vi.fn(),
+    listAvailableSlots: vi.fn(),
     updateAppointment: vi.fn(),
     cancelAppointment: vi.fn(),
     getFacilityStatus: vi.fn(),
+    getFacilityAvailabilityStatus: vi.fn(),
     getPractitionerStatus: vi.fn(),
     getPatientStatus: vi.fn(),
     getActivePractitionerAssignment: vi.fn(),
@@ -546,6 +548,68 @@ describe('appointment service', () => {
         totalItems: 1,
         totalPages: 1,
       },
+    });
+  });
+
+  it('checks facility, practitioner, and assignment state before listing availability', async () => {
+    const repository = createRepositoryMock();
+    repository.getFacilityAvailabilityStatus.mockResolvedValue({
+      id: facilityId,
+      is_active: true,
+      time_zone: 'Africa/Addis_Ababa',
+    });
+    repository.getPractitionerStatus.mockResolvedValue({
+      id: practitionerId,
+      is_active: true,
+    });
+    repository.getActivePractitionerAssignment.mockResolvedValue({
+      id: '55555555-5555-4555-8555-555555555555',
+    });
+    repository.listAvailableSlots.mockResolvedValue([
+      {
+        start: '2026-08-07T06:00:00.000Z',
+        end: '2026-08-07T06:30:00.000Z',
+        slotMinutes: 30,
+      },
+    ]);
+
+    const service = createAppointmentService(repository);
+    const availability = await service.listAppointmentAvailability({
+      facilityId,
+      practitionerId,
+      from: '2026-08-07T09:00:00+03:00',
+      to: '2026-08-07T12:00:00+03:00',
+    });
+
+    expect(repository.getFacilityAvailabilityStatus).toHaveBeenCalledWith(
+      facilityId,
+    );
+    expect(repository.getPractitionerStatus).toHaveBeenCalledWith(
+      practitionerId,
+    );
+    expect(repository.getActivePractitionerAssignment).toHaveBeenCalledWith(
+      practitionerId,
+      facilityId,
+    );
+    expect(repository.listAvailableSlots).toHaveBeenCalledWith({
+      facilityId,
+      practitionerId,
+      from: '2026-08-07T06:00:00.000Z',
+      to: '2026-08-07T09:00:00.000Z',
+    });
+    expect(availability).toEqual({
+      facilityId,
+      practitionerId,
+      timeZone: 'Africa/Addis_Ababa',
+      from: '2026-08-07T06:00:00.000Z',
+      to: '2026-08-07T09:00:00.000Z',
+      slots: [
+        {
+          start: '2026-08-07T06:00:00.000Z',
+          end: '2026-08-07T06:30:00.000Z',
+          slotMinutes: 30,
+        },
+      ],
     });
   });
 });

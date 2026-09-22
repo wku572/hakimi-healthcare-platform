@@ -299,6 +299,9 @@ describe('request observability', () => {
         '/api/v1/practitioners/doctor@example.org/facilities/secret-value',
       ),
     ).toBe('/api/v1/practitioners/:practitionerId/facilities/:assignmentId');
+    expect(
+      normalizeRouteTemplate('GET', '/api/v1/appointments/availability'),
+    ).toBe('/api/v1/appointments/availability');
     expect(normalizeRouteTemplate('GET', '/unknown/patient@example.org')).toBe(
       'UNMATCHED',
     );

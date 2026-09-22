@@ -2,6 +2,7 @@ import type { Router } from 'express';
 import { Router as createRouter } from 'express';
 import {
   parseAppointmentIdParam,
+  parseAppointmentAvailabilityQuery,
   parseCancelAppointmentInput,
   parseCreateAppointmentInput,
   parseListAppointmentsQuery,
@@ -51,6 +52,26 @@ export function createAppointmentsRouter(
       );
 
       response.status(200).json(appointments);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get('/availability', async (request, response, next) => {
+    try {
+      const query = parseAppointmentAvailabilityQuery(request.query);
+      await authorizer.authorize(
+        response,
+        'listAppointmentAvailability',
+        undefined,
+        {
+          facilityId: query.facilityId,
+          practitionerId: query.practitionerId,
+        },
+      );
+      const availability = await service.listAppointmentAvailability(query);
+
+      response.status(200).json(availability);
     } catch (error) {
       next(error);
     }
