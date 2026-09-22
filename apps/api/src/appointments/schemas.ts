@@ -1,6 +1,7 @@
 import type {
   CancelAppointmentInput,
   CreateAppointmentInput,
+  AppointmentAvailabilityQuery,
   AppointmentListQuery,
   UpdateAppointmentInput,
 } from '@hakimi/shared';
@@ -143,6 +144,46 @@ export const listAppointmentsQuerySchema = z
     }
   });
 
+const MAX_AVAILABILITY_RANGE_MS = 14 * 24 * 60 * 60 * 1000;
+
+export const appointmentAvailabilityQuerySchema = z
+  .object({
+    facilityId: z.string().uuid('Facility ID must be a valid UUID'),
+    practitionerId: z.string().uuid('Practitioner ID must be a valid UUID'),
+    from: isoDateTimeSchema('From'),
+    to: isoDateTimeSchema('To'),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const from = Date.parse(value.from);
+    const to = Date.parse(value.to);
+
+    if (from >= to) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['to'],
+        message: 'To must be later than From',
+      });
+      return;
+    }
+
+    if (to - from > MAX_AVAILABILITY_RANGE_MS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['to'],
+        message: 'Availability range must not exceed 14 days',
+      });
+    }
+
+    if (to <= Date.now()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['to'],
+        message: 'Availability range must not be entirely in the past',
+      });
+    }
+  });
+
 export function parseCreateAppointmentInput(
   input: unknown,
 ): CreateAppointmentInput {
@@ -169,4 +210,10 @@ export function parseListAppointmentsQuery(
   input: unknown,
 ): AppointmentListQuery {
   return parseWithSchema(listAppointmentsQuerySchema, input);
+}
+
+export function parseAppointmentAvailabilityQuery(
+  input: unknown,
+): AppointmentAvailabilityQuery {
+  return parseWithSchema(appointmentAvailabilityQuerySchema, input);
 }

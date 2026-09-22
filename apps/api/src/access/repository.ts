@@ -761,7 +761,11 @@ export function createAccessRepository(
         );
       }
 
-      if (operation === 'createPatient' || operation === 'createAppointment') {
+      if (
+        operation === 'createPatient' ||
+        operation === 'createAppointment' ||
+        operation === 'listAppointmentAvailability'
+      ) {
         return queryAuthorized(
           executor,
           `SELECT ${actorHasFacilityRoleSql('$2::uuid', ['FACILITY_ADMIN', 'SCHEDULER'])} AS authorized`,

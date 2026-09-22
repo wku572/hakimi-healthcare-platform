@@ -61,6 +61,7 @@ function normalizeCreateInput(
     region: normalizeText(input.region),
     city: normalizeText(input.city),
     addressLine: normalizeNullableText(input.addressLine),
+    timeZone: normalizeText(input.timeZone ?? 'Africa/Addis_Ababa'),
     isActive: input.isActive ?? true,
   };
 }
@@ -104,6 +105,10 @@ function normalizeUpdateInput(
 
   if (input.addressLine !== undefined) {
     normalized.addressLine = normalizeNullableText(input.addressLine);
+  }
+
+  if (input.timeZone !== undefined) {
+    normalized.timeZone = normalizeText(input.timeZone);
   }
 
   if (input.isActive !== undefined) {

@@ -129,6 +129,11 @@ const ROUTES: RouteDefinition[] = [
   },
   {
     method: 'GET',
+    pattern: /^\/api\/v1\/appointments\/availability\/?$/,
+    template: '/api/v1/appointments/availability',
+  },
+  {
+    method: 'GET',
     pattern: /^\/api\/v1\/appointments\/[^/]+\/?$/,
     template: '/api/v1/appointments/:appointmentId',
   },

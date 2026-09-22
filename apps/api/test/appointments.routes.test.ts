@@ -17,6 +17,8 @@ import type { AppointmentService } from '../src/appointments/service.js';
 function createAppointmentServiceMock(): Mocked<AppointmentService> {
   return {
     createAppointment: vi.fn<AppointmentService['createAppointment']>(),
+    listAppointmentAvailability:
+      vi.fn<AppointmentService['listAppointmentAvailability']>(),
     listAppointments: vi.fn<AppointmentService['listAppointments']>(),
     getAppointmentById: vi.fn<AppointmentService['getAppointmentById']>(),
     updateAppointment: vi.fn<AppointmentService['updateAppointment']>(),
@@ -79,6 +81,21 @@ const appointment = {
     city: 'Addis Ababa',
     isActive: true,
   },
+};
+
+const appointmentAvailabilityResponse = {
+  facilityId: appointment.facilityId,
+  practitionerId: appointment.practitionerId,
+  timeZone: 'Africa/Addis_Ababa',
+  from: '2026-10-07T06:00:00.000Z',
+  to: '2026-10-07T09:00:00.000Z',
+  slots: [
+    {
+      start: '2026-10-07T06:00:00.000Z',
+      end: '2026-10-07T06:30:00.000Z',
+      slotMinutes: 30,
+    },
+  ],
 };
 
 const appointmentListResponse = {
@@ -175,6 +192,77 @@ describe('appointment routes', () => {
       },
       allowAllScope,
     );
+  });
+
+  it('returns appointment availability without patient or busy appointment details', async () => {
+    const { app, service } = createTestApp();
+    service.listAppointmentAvailability.mockResolvedValue(
+      appointmentAvailabilityResponse,
+    );
+
+    const response = await request(app)
+      .get('/api/v1/appointments/availability')
+      .query({
+        facilityId: appointment.facilityId,
+        practitionerId: appointment.practitionerId,
+        from: '2026-10-07T09:00:00+03:00',
+        to: '2026-10-07T12:00:00+03:00',
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(appointmentAvailabilityResponse);
+    expect(JSON.stringify(response.body)).not.toContain('patient');
+    expect(JSON.stringify(response.body)).not.toContain('appointment');
+    expect(service.listAppointmentAvailability).toHaveBeenCalledWith({
+      facilityId: appointment.facilityId,
+      practitionerId: appointment.practitionerId,
+      from: '2026-10-07T09:00:00+03:00',
+      to: '2026-10-07T12:00:00+03:00',
+    });
+  });
+
+  it('rejects invalid appointment availability queries', async () => {
+    const { app, service } = createTestApp();
+
+    const invalidUuidResponse = await request(app)
+      .get('/api/v1/appointments/availability')
+      .query({
+        facilityId: 'not-a-uuid',
+        practitionerId: appointment.practitionerId,
+        from: '2026-10-07T09:00:00+03:00',
+        to: '2026-10-07T12:00:00+03:00',
+      });
+    const callerDurationResponse = await request(app)
+      .get('/api/v1/appointments/availability')
+      .query({
+        facilityId: appointment.facilityId,
+        practitionerId: appointment.practitionerId,
+        from: '2026-10-07T09:00:00+03:00',
+        to: '2026-10-07T12:00:00+03:00',
+        slotMinutes: '30',
+      });
+    const longRangeResponse = await request(app)
+      .get('/api/v1/appointments/availability')
+      .query({
+        facilityId: appointment.facilityId,
+        practitionerId: appointment.practitionerId,
+        from: '2026-10-07T09:00:00+03:00',
+        to: '2026-10-22T09:00:00+03:00',
+      });
+    const pastWindowResponse = await request(app)
+      .get('/api/v1/appointments/availability')
+      .query({
+        facilityId: appointment.facilityId,
+        practitionerId: appointment.practitionerId,
+        from: '2026-01-07T09:00:00+03:00',
+        to: '2026-01-07T12:00:00+03:00',
+      });
+
+    expect(invalidUuidResponse.status).toBe(400);
+    expect(callerDurationResponse.status).toBe(400);
+    expect(longRangeResponse.status).toBe(400);
+    expect(pastWindowResponse.status).toBe(400);
+    expect(service.listAppointmentAvailability).not.toHaveBeenCalled();
   });
 
   it('returns an appointment by id', async () => {
