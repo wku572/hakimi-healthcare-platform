@@ -25,6 +25,7 @@ const facility: HealthcareFacility = {
   region: 'Addis Ababa',
   city: 'Addis Ababa',
   addressLine: null,
+  timeZone: 'Africa/Addis_Ababa',
   isActive: true,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',

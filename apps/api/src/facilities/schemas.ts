@@ -30,6 +30,25 @@ const emailSchema = z.preprocess((value) => {
   return trimmed === '' ? null : trimmed;
 }, z.string().email('Email must be a valid email address').max(254).nullable().optional());
 
+function isValidIanaTimeZone(value: string) {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const timeZoneSchema = z
+  .string()
+  .trim()
+  .min(1, 'Time zone must not be empty')
+  .max(100, 'Time zone must be at most 100 characters')
+  .refine(
+    isValidIanaTimeZone,
+    'Time zone must be a valid IANA time zone identifier',
+  );
+
 export const createHealthcareFacilitySchema = z
   .object({
     code: requiredTrimmedString(2, 50, 'Code'),
@@ -41,6 +60,7 @@ export const createHealthcareFacilitySchema = z
     region: requiredTrimmedString(2, 100, 'Region'),
     city: requiredTrimmedString(2, 100, 'City'),
     addressLine: optionalNullableString(300),
+    timeZone: timeZoneSchema.optional().default('Africa/Addis_Ababa'),
     isActive: z.boolean().optional().default(true),
   })
   .strict();
@@ -76,6 +96,7 @@ export const updateHealthcareFacilitySchema = z
       .max(100, 'City must be at most 100 characters')
       .optional(),
     addressLine: optionalNullableString(300),
+    timeZone: timeZoneSchema.optional(),
     isActive: z.boolean().optional(),
   })
   .strict()

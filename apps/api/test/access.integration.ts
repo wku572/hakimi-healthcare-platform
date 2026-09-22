@@ -58,11 +58,12 @@ describe('PostgreSQL workforce access integration', () => {
           region,
           city,
           address_line,
+          time_zone,
           is_active
         )
         VALUES
-          ($1, 'Synthetic Access Clinic', 'clinic', $2, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', true),
-          ($3, 'Synthetic Other Clinic', 'clinic', $4, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', true)
+          ($1, 'Synthetic Access Clinic', 'clinic', $2, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', 'Africa/Addis_Ababa', true),
+          ($3, 'Synthetic Other Clinic', 'clinic', $4, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', 'Africa/Addis_Ababa', true)
         RETURNING id
       `,
       [
@@ -424,12 +425,13 @@ describe('target-specific authorization linearization', () => {
           region,
           city,
           address_line,
+          time_zone,
           is_active
         )
         VALUES
-          ($1, 'Synthetic Role Facility A', 'clinic', $2, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', true),
-          ($3, 'Synthetic Role Facility B', 'clinic', $4, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', true),
-          ($5, 'Synthetic Practitioner Facility', 'clinic', $6, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', true)
+          ($1, 'Synthetic Role Facility A', 'clinic', $2, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', 'Africa/Addis_Ababa', true),
+          ($3, 'Synthetic Role Facility B', 'clinic', $4, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', 'Africa/Addis_Ababa', true),
+          ($5, 'Synthetic Practitioner Facility', 'clinic', $6, 'Synthetic Region', 'Synthetic City', 'Synthetic Address', 'Africa/Addis_Ababa', true)
         RETURNING id
       `,
       [

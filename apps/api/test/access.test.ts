@@ -157,18 +157,21 @@ describe('OIDC resource-server verification', () => {
 });
 
 describe('closed operation and field policy', () => {
-  it('maps every protected route to one of the 24 non-health operations', () => {
-    expect(new Set(protectedOperations).size).toBe(24);
+  it('maps every protected route to one of the 25 non-health operations', () => {
+    expect(new Set(protectedOperations).size).toBe(25);
     expect(findProtectedOperation('GET', '/api/v1/facilities')).toBe(
       'listHealthcareFacilities',
     );
+    expect(
+      findProtectedOperation('GET', '/api/v1/appointments/availability'),
+    ).toBe('listAppointmentAvailability');
     expect(
       findProtectedOperation('DELETE', '/api/v1/patients/:patientId'),
     ).toBe('deactivatePatient');
     expect(findProtectedOperation('GET', '/api/v1/unknown')).toBeUndefined();
   });
 
-  it('reconciles 25 approved paths, one blocked operation, and zero patient grants', () => {
+  it('reconciles 26 approved paths, one blocked operation, and zero patient grants', () => {
     const approvedProtectedOperations = protectedOperations.filter(
       (operation) => getPermittedRoles(operation).length > 0,
     );
@@ -176,9 +179,9 @@ describe('closed operation and field policy', () => {
       (operation) => getPermittedRoles(operation).length === 0,
     );
 
-    expect(approvedProtectedOperations).toHaveLength(23);
+    expect(approvedProtectedOperations).toHaveLength(24);
     expect(blockedOperations).toEqual(['deactivatePatient']);
-    expect(approvedProtectedOperations.length + 2).toBe(25);
+    expect(approvedProtectedOperations.length + 2).toBe(26);
     expect(workforceRoles).not.toContain('PATIENT');
     for (const operation of protectedOperations) {
       expect(getPermittedRoles(operation)).not.toContain('PATIENT');
@@ -303,7 +306,7 @@ describe('closed operation and field policy', () => {
     }
   });
 
-  it('documents one workforce scheme for 24 protected operations and two public health operations', () => {
+  it('documents one workforce scheme for 25 protected operations and two public health operations', () => {
     const specification = readFileSync(
       fileURLToPath(new URL('../openapi.yaml', import.meta.url)),
       'utf8',
@@ -319,10 +322,10 @@ describe('closed operation and field policy', () => {
       specification.match(/\$ref: '#\/components\/responses\/Forbidden'/g)
         ?.length ?? 0;
 
-    expect(operationCount).toBe(26);
+    expect(operationCount).toBe(27);
     expect(publicHealthCount).toBe(2);
-    expect(authenticationResponseCount).toBe(24);
-    expect(forbiddenResponseCount).toBe(24);
+    expect(authenticationResponseCount).toBe(25);
+    expect(forbiddenResponseCount).toBe(25);
     expect(specification).toContain('workforceBearer:');
     expect(specification).toContain('AUTHENTICATION_REQUIRED');
     expect(specification).toContain('FORBIDDEN');

@@ -59,6 +59,7 @@ function createConfig(): LocalDemoProvisioningConfig {
       region: 'Addis Ababa',
       city: 'Addis Ababa',
       addressLine: 'Fictional Bole Road address',
+      timeZone: 'Africa/Addis_Ababa',
     }),
     otherFacility: Object.freeze({
       id: otherFacilityId,
@@ -71,6 +72,7 @@ function createConfig(): LocalDemoProvisioningConfig {
       region: 'Amhara',
       city: 'Bahir Dar',
       addressLine: 'Fictional lakeside address',
+      timeZone: 'Africa/Addis_Ababa',
     }),
     practitioners: Object.freeze([
       Object.freeze({
@@ -193,6 +195,10 @@ describe('PostgreSQL local demo provisioning integration', () => {
     await pool.query('DELETE FROM appointments WHERE id = $1', [
       config.appointment.id,
     ]);
+    await pool.query(
+      'DELETE FROM practitioner_working_hours WHERE practitioner_id = ANY($1::uuid[])',
+      [config.practitioners.map((practitioner) => practitioner.id)],
+    );
     await pool.query('DELETE FROM workforce_sessions WHERE actor_id = $1', [
       config.actorId,
     ]);
@@ -260,6 +266,25 @@ describe('PostgreSQL local demo provisioning integration', () => {
     await expect(
       countRows('appointments', [config.appointment.id]),
     ).resolves.toBe('1');
+    const workingHourRows = await pool.query<{ count: string }>(
+      `
+        SELECT COUNT(*)::text AS count
+        FROM practitioner_working_hours
+        WHERE practitioner_id = ANY($1::uuid[])
+          AND facility_id = $2
+          AND is_active = true
+      `,
+      [
+        config.practitioners
+          .filter(
+            (practitioner) =>
+              practitioner.facilityId === config.primaryFacility.id,
+          )
+          .map((practitioner) => practitioner.id),
+        config.primaryFacility.id,
+      ],
+    );
+    expect(workingHourRows.rows[0]!.count).toBe('20');
 
     const actorRows = await pool.query<{ count: string }>(
       `

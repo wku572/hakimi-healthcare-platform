@@ -26,6 +26,7 @@ export const protectedOperations = [
   'updatePatient',
   'deactivatePatient',
   'createAppointment',
+  'listAppointmentAvailability',
   'listAppointments',
   'getAppointmentById',
   'updateAppointment',
@@ -61,6 +62,7 @@ const operationPolicy = {
         'region',
         'city',
         'addressLine',
+        'timeZone',
         'isActive',
       ],
       FACILITY_ADMIN: [
@@ -154,6 +156,9 @@ const operationPolicy = {
     coarseRoles: ['FACILITY_ADMIN', 'SCHEDULER'],
   },
   createAppointment: { roles: ['FACILITY_ADMIN', 'SCHEDULER'] },
+  listAppointmentAvailability: {
+    roles: ['FACILITY_ADMIN', 'SCHEDULER'],
+  },
   listAppointments: {
     roles: ['FACILITY_ADMIN', 'SCHEDULER', 'PRACTITIONER'],
   },
@@ -211,6 +216,7 @@ const routeOperations = new Map<string, ProtectedOperation>([
   ['PATCH /api/v1/patients/:patientId', 'updatePatient'],
   ['DELETE /api/v1/patients/:patientId', 'deactivatePatient'],
   ['POST /api/v1/appointments', 'createAppointment'],
+  ['GET /api/v1/appointments/availability', 'listAppointmentAvailability'],
   ['GET /api/v1/appointments', 'listAppointments'],
   ['GET /api/v1/appointments/:appointmentId', 'getAppointmentById'],
   ['PATCH /api/v1/appointments/:appointmentId', 'updateAppointment'],

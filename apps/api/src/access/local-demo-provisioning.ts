@@ -23,6 +23,7 @@ type LocalDemoFacility = Readonly<{
   region: string;
   city: string;
   addressLine: string;
+  timeZone: string;
 }>;
 
 type LocalDemoPractitioner = Readonly<{
@@ -89,6 +90,7 @@ export const defaultLocalDemoProvisioningConfig: LocalDemoProvisioningConfig =
       region: 'Addis Ababa',
       city: 'Addis Ababa',
       addressLine: 'Fictional Bole Road address',
+      timeZone: 'Africa/Addis_Ababa',
     }),
     otherFacility: Object.freeze({
       id: '00000000-0000-4000-8000-000000000302',
@@ -101,6 +103,7 @@ export const defaultLocalDemoProvisioningConfig: LocalDemoProvisioningConfig =
       region: 'Amhara',
       city: 'Bahir Dar',
       addressLine: 'Fictional lakeside address',
+      timeZone: 'Africa/Addis_Ababa',
     }),
     practitioners: Object.freeze([
       Object.freeze({
@@ -233,9 +236,10 @@ async function upsertFacility(
         region,
         city,
         address_line,
+        time_zone,
         is_active
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true)
       ON CONFLICT (id) DO UPDATE
       SET code = EXCLUDED.code,
           name = EXCLUDED.name,
@@ -246,6 +250,7 @@ async function upsertFacility(
           region = EXCLUDED.region,
           city = EXCLUDED.city,
           address_line = EXCLUDED.address_line,
+          time_zone = EXCLUDED.time_zone,
           is_active = true,
           updated_at = now()
     `,
@@ -260,8 +265,60 @@ async function upsertFacility(
       facility.region,
       facility.city,
       facility.addressLine,
+      facility.timeZone,
     ],
   );
+}
+
+async function insertDemoWorkingHours(
+  db: Pick<Pool, 'query'>,
+  practitioner: LocalDemoPractitioner,
+) {
+  const workingPeriods = [
+    { start: '09:00', end: '12:00' },
+    { start: '13:00', end: '16:00' },
+  ] as const;
+
+  for (const weekday of [1, 2, 3, 4, 5] as const) {
+    for (const period of workingPeriods) {
+      await db.query(
+        `
+          INSERT INTO practitioner_working_hours (
+            practitioner_id,
+            facility_id,
+            iso_weekday,
+            local_start_time,
+            local_end_time,
+            slot_minutes,
+            effective_start_date,
+            effective_end_date,
+            is_active
+          )
+          SELECT $1, $2, $3, $4::time, $5::time, 30, DATE '2026-01-01', NULL, true
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM practitioner_working_hours existing
+            WHERE existing.practitioner_id = $1
+              AND existing.facility_id = $2
+              AND existing.iso_weekday = $3
+              AND existing.local_start_time = $4::time
+              AND existing.local_end_time = $5::time
+              AND existing.slot_minutes = 30
+              AND existing.effective_start_date = DATE '2026-01-01'
+              AND existing.effective_end_date IS NULL
+              AND existing.is_active = true
+          )
+        `,
+        [
+          practitioner.id,
+          practitioner.facilityId,
+          weekday,
+          period.start,
+          period.end,
+        ],
+      );
+    }
+  }
 }
 
 async function upsertPractitioner(
@@ -497,6 +554,9 @@ export async function provisionLocalDemoData(
 
     for (const practitioner of config.practitioners) {
       await upsertPractitioner(client, practitioner);
+      if (practitioner.facilityId === config.primaryFacility.id) {
+        await insertDemoWorkingHours(client, practitioner);
+      }
     }
 
     for (const patient of config.patients) {

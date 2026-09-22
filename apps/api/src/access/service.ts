@@ -74,6 +74,7 @@ function throwPrivacyPreservingNotFound(operation: ProtectedOperation): never {
   if (
     operation === 'createPatient' ||
     operation === 'createAppointment' ||
+    operation === 'listAppointmentAvailability' ||
     operation === 'createPractitionerAssignment'
   ) {
     throw createFacilityNotFoundError();

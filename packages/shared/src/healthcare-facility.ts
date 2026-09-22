@@ -19,6 +19,7 @@ export interface HealthcareFacility {
   region: string;
   city: string;
   addressLine: string | null;
+  timeZone: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
