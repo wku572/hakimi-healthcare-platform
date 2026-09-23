@@ -127,6 +127,11 @@ h3 {
   font-size: 1.12rem;
 }
 
+h4 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
 p {
   color: var(--color-muted);
   line-height: 1.55;
@@ -287,6 +292,31 @@ p {
 .choice-row small {
   margin-top: 4px;
   color: var(--color-muted);
+}
+
+.availability-group legend {
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+
+.availability-note {
+  margin: 0 0 10px;
+}
+
+.slot-date-group {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.slot-row {
+  align-items: flex-start;
 }
 
 .primary-action,

@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import type { HealthcareFacility, Patient, Practitioner } from '@hakimi/shared';
+import type {
+  AppointmentAvailabilityResponse,
+  AppointmentAvailabilitySlot,
+  HealthcareFacility,
+  Patient,
+  Practitioner,
+} from '@hakimi/shared';
 import type { WorkforceAuthClient, WorkforceUserHint } from './authClient';
 import { createWorkforceAuthClient } from './authClient';
 import { loadWorkforceAuthConfig } from './authConfig';
@@ -30,6 +36,7 @@ type AppProps = Readonly<{
 }>;
 
 const emptyPatientResults: LoadState<Patient[]> = { state: 'idle' };
+const availabilityWindowDays = 14;
 
 function createDefaultAuthClient(): WorkforceAuthClient {
   const config = loadWorkforceAuthConfig(import.meta.env);
@@ -79,6 +86,92 @@ function registrationForFacility(patient: Patient, facilityId: string) {
   );
 }
 
+function slotKey(slot: AppointmentAvailabilitySlot) {
+  return `${slot.start}|${slot.end}`;
+}
+
+function datePartsForTimeZone(instant: string, timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(instant));
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value]),
+  );
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function formatDateHeading(dateKey: string, timeZone: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(`${dateKey}T12:00:00.000Z`));
+}
+
+function formatSlotTime(slot: AppointmentAvailabilitySlot, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'shortOffset',
+  });
+
+  return `${formatter.format(new Date(slot.start))} - ${formatter.format(
+    new Date(slot.end),
+  )}`;
+}
+
+function groupSlotsByFacilityDate(
+  slots: AppointmentAvailabilitySlot[],
+  timeZone: string,
+) {
+  const groups = new Map<
+    string,
+    {
+      dateLabel: string;
+      slots: AppointmentAvailabilitySlot[];
+    }
+  >();
+
+  for (const slot of [...slots].sort((first, second) =>
+    first.start.localeCompare(second.start),
+  )) {
+    const dateKey = datePartsForTimeZone(slot.start, timeZone);
+    const group = groups.get(dateKey) ?? {
+      dateLabel: formatDateHeading(dateKey, timeZone),
+      slots: [],
+    };
+    group.slots.push(slot);
+    groups.set(dateKey, group);
+  }
+
+  return [...groups.entries()].map(([dateKey, group]) => ({
+    dateKey,
+    ...group,
+  }));
+}
+
+function createAvailabilityWindow() {
+  const from = new Date();
+  const to = new Date(
+    from.getTime() + availabilityWindowDays * 24 * 60 * 60 * 1000,
+  );
+
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+  };
+}
+
 function ProtectedSchedulingWorkspace({
   apiClient,
   onSessionExpired,
@@ -98,8 +191,14 @@ function ProtectedSchedulingWorkspace({
     useState<LoadState<Patient[]>>(emptyPatientResults);
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [selectedPractitionerId, setSelectedPractitionerId] = useState('');
+  const [availabilityState, setAvailabilityState] = useState<
+    LoadState<AppointmentAvailabilityResponse>
+  >({ state: 'idle' });
+  const [selectedSlotKey, setSelectedSlotKey] = useState('');
+  const [availabilityRetryNonce, setAvailabilityRetryNonce] = useState(0);
   const [patientSearch, setPatientSearch] = useState('');
   const patientSearchAbort = useRef<AbortController | null>(null);
+  const availabilityAbort = useRef<AbortController | null>(null);
 
   const facilities =
     facilityState.state === 'success' ? facilityState.data : [];
@@ -113,6 +212,12 @@ function ProtectedSchedulingWorkspace({
   const selectedPractitioner = practitioners.find(
     (practitioner) => practitioner.id === selectedPractitionerId,
   );
+  const selectedSlot =
+    availabilityState.state === 'success'
+      ? availabilityState.data.slots.find(
+          (slot) => slotKey(slot) === selectedSlotKey,
+        )
+      : undefined;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -164,6 +269,8 @@ function ProtectedSchedulingWorkspace({
     async function loadPractitioners() {
       setPractitionerState({ state: 'loading' });
       setSelectedPractitionerId('');
+      setSelectedSlotKey('');
+      setAvailabilityState({ state: 'idle' });
       try {
         const response = await apiClient.listPractitioners({
           facilityId,
@@ -196,6 +303,72 @@ function ProtectedSchedulingWorkspace({
       controller.abort();
     };
   }, [apiClient, fixedFacility, onSessionExpired]);
+
+  useEffect(() => {
+    const facility = fixedFacility;
+    availabilityAbort.current?.abort();
+
+    if (!facility || !selectedPractitionerId) {
+      return;
+    }
+
+    const facilityId = facility.id;
+    const practitionerId = selectedPractitionerId;
+    const controller = new AbortController();
+    availabilityAbort.current = controller;
+    const window = createAvailabilityWindow();
+
+    async function loadAvailability() {
+      setSelectedSlotKey('');
+      setAvailabilityState({ state: 'loading' });
+      try {
+        const response = await apiClient.listAppointmentAvailability({
+          facilityId,
+          practitionerId,
+          from: window.from,
+          to: window.to,
+          signal: controller.signal,
+        });
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setAvailabilityState({ state: 'success', data: response });
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        const message = getApiErrorMessage(error);
+        if (!message) {
+          return;
+        }
+        if (
+          error instanceof HakimiApiError &&
+          error.kind === 'unauthenticated'
+        ) {
+          setSelectedSlotKey('');
+          onSessionExpired();
+          return;
+        }
+        setSelectedSlotKey('');
+        setAvailabilityState({ state: 'error', message });
+      }
+    }
+
+    void loadAvailability();
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    apiClient,
+    availabilityRetryNonce,
+    fixedFacility,
+    onSessionExpired,
+    selectedPractitionerId,
+  ]);
 
   async function searchPatients(mode: 'query' | 'browse') {
     if (!fixedFacility) {
@@ -418,6 +591,7 @@ function ProtectedSchedulingWorkspace({
                     checked={selectedPractitionerId === practitioner.id}
                     onChange={() => {
                       setSelectedPractitionerId(practitioner.id);
+                      setSelectedSlotKey('');
                     }}
                   />
                   <span>
@@ -435,12 +609,99 @@ function ProtectedSchedulingWorkspace({
           aria-labelledby="availability-heading"
         >
           <h3 id="availability-heading">4. Date and time</h3>
-          <p role="status">Appointment availability is not implemented yet.</p>
           <p>
-            Hakimi can read authorized facilities, patients, and practitioners,
-            but the API does not yet expose an availability endpoint. This demo
-            stops here instead of showing fake slots.
+            Availability is loaded from the protected Hakimi API after a
+            practitioner is selected. Appointment scheduling will be enabled in
+            the next phase.
           </p>
+          {!selectedPractitioner && (
+            <p className="empty-state">
+              Select a practitioner to load PostgreSQL-backed advisory slots.
+            </p>
+          )}
+          {selectedPractitioner && availabilityState.state === 'loading' && (
+            <p role="status">Loading appointment availability...</p>
+          )}
+          {availabilityState.state === 'error' && (
+            <div className="empty-state" role="alert">
+              <p>{availabilityState.message}</p>
+              <button
+                className="secondary-action"
+                type="button"
+                onClick={() => {
+                  setAvailabilityRetryNonce((value) => value + 1);
+                }}
+              >
+                Retry availability
+              </button>
+            </div>
+          )}
+          {availabilityState.state === 'success' &&
+            availabilityState.data.slots.length === 0 && (
+              <div className="empty-state">
+                <p>
+                  No appointment slots are available for this practitioner in
+                  the next {availabilityWindowDays} days.
+                </p>
+                <button
+                  className="secondary-action"
+                  type="button"
+                  onClick={() => {
+                    setAvailabilityRetryNonce((value) => value + 1);
+                  }}
+                >
+                  Retry availability
+                </button>
+              </div>
+            )}
+          {availabilityState.state === 'success' &&
+            availabilityState.data.slots.length > 0 && (
+              <fieldset className="choice-group availability-group">
+                <legend>
+                  Select one advisory slot in {availabilityState.data.timeZone}
+                </legend>
+                <p className="availability-note">
+                  Availability is confirmed only when the appointment is
+                  successfully scheduled.
+                </p>
+                {groupSlotsByFacilityDate(
+                  availabilityState.data.slots,
+                  availabilityState.data.timeZone,
+                ).map((group) => (
+                  <div className="slot-date-group" key={group.dateKey}>
+                    <h4>{group.dateLabel}</h4>
+                    <div className="slot-grid">
+                      {group.slots.map((slot) => (
+                        <label
+                          className="choice-row slot-row"
+                          key={slotKey(slot)}
+                        >
+                          <input
+                            type="radio"
+                            name="appointment-slot"
+                            checked={selectedSlotKey === slotKey(slot)}
+                            onChange={() => {
+                              setSelectedSlotKey(slotKey(slot));
+                            }}
+                          />
+                          <span>
+                            <strong>
+                              {formatSlotTime(
+                                slot,
+                                availabilityState.data.timeZone,
+                              )}
+                            </strong>
+                            <small>
+                              {slot.slotMinutes} minute advisory slot
+                            </small>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </fieldset>
+            )}
         </section>
       </div>
 
@@ -469,7 +730,11 @@ function ProtectedSchedulingWorkspace({
           </div>
           <div>
             <dt>Date and time</dt>
-            <dd>Unavailable</dd>
+            <dd>
+              {selectedSlot && availabilityState.state === 'success'
+                ? formatSlotTime(selectedSlot, availabilityState.data.timeZone)
+                : 'Not selected'}
+            </dd>
           </div>
           <div>
             <dt>Appointment status</dt>
