@@ -1,4 +1,5 @@
 import type {
+  AppointmentAvailabilityResponse,
   HealthcareFacilityListResponse,
   PatientListResponse,
   PractitionerListResponse,
@@ -38,6 +39,13 @@ export type HakimiApiClient = Readonly<{
     facilityId: string;
     signal?: AbortSignal;
   }): Promise<PractitionerListResponse>;
+  listAppointmentAvailability(options: {
+    facilityId: string;
+    practitionerId: string;
+    from: string;
+    to: string;
+    signal?: AbortSignal;
+  }): Promise<AppointmentAvailabilityResponse>;
 }>;
 
 type Fetcher = typeof fetch;
@@ -84,6 +92,93 @@ function failureMessage(kind: ApiFailureKind) {
       return 'Hakimi API is unavailable. Check the local API server.';
     case 'server':
       return 'Hakimi API returned an unexpected error.';
+  }
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isValidDateTime(value: string) {
+  return Number.isFinite(Date.parse(value));
+}
+
+function toTime(value: string) {
+  return new Date(value).getTime();
+}
+
+function isValidTimeZone(value: string) {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function rejectInvalidAvailabilityResponse(): never {
+  throw new HakimiApiError('server', failureMessage('server'));
+}
+
+function assertAvailabilityResponse(
+  value: unknown,
+): asserts value is AppointmentAvailabilityResponse {
+  if (!value || typeof value !== 'object') {
+    rejectInvalidAvailabilityResponse();
+  }
+
+  const response = value as Partial<AppointmentAvailabilityResponse>;
+  if (
+    !isString(response.facilityId) ||
+    !isString(response.practitionerId) ||
+    !isString(response.timeZone) ||
+    !isString(response.from) ||
+    !isString(response.to) ||
+    !Array.isArray(response.slots)
+  ) {
+    rejectInvalidAvailabilityResponse();
+  }
+
+  if (
+    !isValidTimeZone(response.timeZone) ||
+    !isValidDateTime(response.from) ||
+    !isValidDateTime(response.to) ||
+    toTime(response.to) <= toTime(response.from)
+  ) {
+    rejectInvalidAvailabilityResponse();
+  }
+
+  const seenSlots = new Set<string>();
+  for (const slot of response.slots) {
+    if (
+      !slot ||
+      typeof slot !== 'object' ||
+      !isString(slot.start) ||
+      !isString(slot.end) ||
+      !isValidDateTime(slot.start) ||
+      !isValidDateTime(slot.end) ||
+      typeof slot.slotMinutes !== 'number' ||
+      !Number.isInteger(slot.slotMinutes) ||
+      slot.slotMinutes <= 0
+    ) {
+      rejectInvalidAvailabilityResponse();
+    }
+
+    const start = toTime(slot.start);
+    const end = toTime(slot.end);
+    const durationMs = slot.slotMinutes * 60 * 1000;
+    const key = `${slot.start}|${slot.end}`;
+
+    if (
+      end <= start ||
+      end - start !== durationMs ||
+      start < toTime(response.from) ||
+      end > toTime(response.to) ||
+      seenSlots.has(key)
+    ) {
+      rejectInvalidAvailabilityResponse();
+    }
+    seenSlots.add(key);
   }
 }
 
@@ -191,6 +286,23 @@ export function createHakimiApiClient(
         `${url.pathname}${url.search}`,
         options.signal,
       );
+    },
+
+    async listAppointmentAvailability(options) {
+      const url = new URL('appointments/availability', config.baseUrl);
+      appendQuery(url, {
+        facilityId: options.facilityId,
+        practitionerId: options.practitionerId,
+        from: options.from,
+        to: options.to,
+      });
+
+      const response = await request<unknown>(
+        `${url.pathname}${url.search}`,
+        options.signal,
+      );
+      assertAvailabilityResponse(response);
+      return response;
     },
   });
 }
